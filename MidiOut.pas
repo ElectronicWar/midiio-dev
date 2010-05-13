@@ -106,6 +106,9 @@ unit MidiOut;
    I haven't implemented any methods for midiOutCachePatches and
   midiOutCacheDrumpatches, mainly 'cause I don't have any way of testing
   them. Does anyone really use these?
+
+  -- Manuel Kroeber/2010
+  Added methods for midiOutCache*Patches. Untested. Hinted as experimental.
 }
 
 interface
@@ -114,11 +117,11 @@ uses
   SysUtils, WinTypes, WinProcs, Classes, Messages, Controls,
 
   MMSystem,
-  CircBuf, MidiType, MidiDefs, DelphiMidiCallback;
+  CircBuf, MidiType, MidiDefs, MidiCons, MidiCallback;
 
 type
-  midioutputState = (mosOpen, mosClosed);
-  EmidioutputError = class(Exception);
+  MidiOutputState = (mosOpen, mosClosed);
+  EMidiOutputError = class(Exception);
 
  { These are the equivalent of constants prefixed with mod_
    as defined in MMSystem. See SetTechnology }
@@ -140,18 +143,29 @@ const
 {-------------------------------------------------------------------}
 type
   TMidiOutput = class(TComponent)
+  private
+    function GetSupportsCaching: Boolean;
+    procedure MidiOutput(var Message: TMessage);
+    procedure SetDeviceID(DeviceID: Cardinal);
+    procedure SetProductName(NewProductName: string);
+    procedure SetTechnology(NewTechnology: OutPortTech);
+    function MidiOutErrorString(WError: Word): string;
+    function GetSupportsStreaming: Boolean;
+    function GetFeaturesAsSet: TFeatureSet;
+    function GetSupportsLRVolCtrl: Boolean;
+    function GetSupportsVolControl: Boolean;
   protected
     Handle: THandle;          { Window handle used for callback notification }
     FDeviceID: Cardinal;      { MIDI device ID }
     FMIDIHandle: Hmidiout;    { Handle to output device }
-    FState: midioutputState;  { Current device state }
+    FState: MidiOutputState;  { Current device state }
     PCtlInfo: PMidiCtlInfo;   { Pointer to control info for DLL }
 
     PBuffer: PCircularBuffer; { Output queue for PutTimedEvent, set by Open }
 
     FError: DWord; { Last MMSYSTEM error } //FAlter: DWord statt Word
 
- { Stuff from midioutCAPS }
+  { Stuff from midioutCAPS }
     FDriverVersion: Version;  { Driver version from midioutGetDevCaps }
     FProductName: string;     { product name }
     FTechnology: OutPortTech; { Type of MIDI output device }
@@ -163,17 +177,12 @@ type
                                 patch caching etc. }
     FNumdevs: Word;           { Number of MIDI output devices on system }
 
-
-    FOnMIDIOutput: TNotifyEvent; { Sysex output finished }
-
-    procedure MidiOutput(var Message: TMessage);
-    procedure SetDeviceID(DeviceID: Cardinal);
-    procedure SetProductName(NewProductName: string);
-    procedure SetTechnology(NewTechnology: OutPortTech);
-    function midioutErrorString(WError: Word): string;
+    FOnMidiOutput: TNotifyEvent; { Sysex output finished }
+    FOnChangeDevice: TNotifyEvent; // after successfully changing the DeviceID
+  published
 
   public
- { Properties }
+  { Properties }
     property MIDIHandle: Hmidiout read FMIDIHandle;
     property DriverVersion: Version  { Driver version from midioutGetDevCaps }
       read FDriverVersion;
@@ -189,10 +198,20 @@ type
       read FChannelMask; { device responds to (internal synth) }
     property Support: DWORD { Technology supported (volume control, }
       read FSupport; { patch caching etc. }
-    property Error: DWord read FError; //FAlter DWors statt Word
+    property Error: DWord read FError; //FAlter DWord statt Word
     property Numdevs: Word read FNumdevs;
 
- { Methods }
+    property SupportedFeatures: TFeatureSet read GetFeaturesAsSet;
+    // if ftStereoVolume is supported, ftVolume is allways supported, too.
+    property SupportsCaching: Boolean read GetSupportsCaching;
+    property SupportsStreaming: Boolean read GetSupportsStreaming;
+    property SupportsVolumeControl: Boolean read GetSupportsVolControl;
+    property SupportsStereoVolumeControl: Boolean read GetSupportsLRVolCtrl;
+
+  { Methods }
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+
     function Open: Boolean; virtual;
     function Close: Boolean; virtual;
     function ChangeDevice(const NewDeviceID: Cardinal): Boolean; virtual;
@@ -200,25 +219,46 @@ type
     procedure PutMidiEvent(theEvent: TMyMidiEvent); virtual;
     procedure PutShort(MidiMessage: Byte; Data1: Byte; Data2: Byte); virtual;
     procedure PutLong(TheSysex: Pointer; msgLength: Word); virtual;
-    procedure SetVolume(Left: Word; Right: Word);
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
+    procedure SetVolume(const Left, Right: Word);
 
-   { Some functions to decode and classify incoming messages would be nice }
+  { Methods encapsulating PutShort provided for your convenience }
+    procedure NoteOn(const Channel, Note: Byte; const Dynamics: Byte = 127);
+    procedure NoteOff(const Channel, Note: Byte; const Dynamics: Byte = 127);
+
+    procedure NoteAftertouch(const Channel, Note: Byte;
+      const NewDynamics: Byte = 127);
+    procedure ChannelAftertouch(const Channel: Byte;
+      const NewDynamics: Byte = 127);
+
+    procedure ControllerChange(const Channel, NewController, Value: Byte);
+    procedure ProgramChange(const Channel, NewProgram: Byte);
+    procedure ChangeInstrument(const Channel, NewInstrument: Byte); deprecated 'Alias of ProgramChange';
+
+  { Experimental and/or untested stuff }
+    // Caching. Returns true if successful. Check LastError on False.
+    // Use property "SupportsCaching" for a pre-check.
+    function CachePatches(const Bank: Cardinal; var PatchArray: TKeyPatchArray;
+      const OperationFlag: Byte): Boolean; experimental;
+    function CacheDrumPatches(const Patch: Cardinal; var KeyArray: TKeyPatchArray;
+      const OperationFlag: Byte): Boolean; experimental;
+
+
+  { Some functions to decode and classify incoming messages would be nice }
 
   published
- { TODO: Property editor with dropdown list of product names }
+  { TODO: Property editor with dropdown list of product names }
     property ProductName: string read FProductName write SetProductName;
 
     property DeviceID: Cardinal read FDeviceID write SetDeviceID default 0;
- { TODO: midiOutGetVolume? Or two properties for Left and Right volume?
-   Is it worth it??
-     midiOutMessage?? Does anyone use this? }
+  { TODO: midiOutGetVolume? Or two properties for Left and Right volume?
+    Is it worth it??
+      midiOutMessage?? Does anyone use this? }
 
  { Events }
-    property Onmidioutput: TNotifyEvent
-      read FOnmidioutput
-      write FOnmidioutput;
+    property OnMidiOutput: TNotifyEvent
+      read FOnMidiOutput write FOnMidiOutput;
+    property OnChangeDevice: TNotifyEvent
+      read FOnChangeDevice write FOnChangeDevice;
   end;
 
 procedure Register;
@@ -253,9 +293,10 @@ function midiHandler(
 
 {-------------------------------------------------------------------}
 
-constructor Tmidioutput.Create(AOwner: TComponent);
+constructor TMidiOutput.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
+
   FState := mosClosed;
   FNumdevs := midiOutGetNumDevs;
 
@@ -264,12 +305,11 @@ begin
   begin
     Handle := Classes.AllocateHWnd(MidiOutput);
   end;
-
 end;
 
 {-------------------------------------------------------------------}
 
-destructor Tmidioutput.Destroy;
+destructor TMidiOutput.Destroy;
 begin
   if FState = mosOpen then
     Close;
@@ -279,6 +319,43 @@ begin
   inherited Destroy;
 end;
 
+function TMidiOutput.GetFeaturesAsSet: TFeatureSet;
+begin
+  Result := [];
+  // Check for "Device supports caching" flag
+  if (FSupport and MIDICAPS_CACHE) = MIDICAPS_CACHE then
+    Result := Result + [ftCaching];
+  // Check for "Device supports MIDI streaming" flag
+  if (FSupport and MIDICAPS_STREAM) = MIDICAPS_STREAM then
+    Result := Result + [ftStreaming];
+  // Check for "Device supports volume control (Mono)" flag
+  if (FSupport and MIDICAPS_VOLUME) = MIDICAPS_VOLUME then
+    Result := Result + [ftVolume];
+  // Check for "Device supports stereo volume control for left and right" flag
+  if (FSupport and MIDICAPS_LRVOLUME) = MIDICAPS_LRVOLUME then
+    Result := Result + [ftStereoVolume];
+end;
+
+function TMidiOutput.GetSupportsCaching: Boolean;
+begin
+  Result := (ftCaching in SupportedFeatures);
+end;
+
+function TMidiOutput.GetSupportsLRVolCtrl: Boolean;
+begin
+  Result := (ftStereoVolume in SupportedFeatures);
+end;
+
+function TMidiOutput.GetSupportsStreaming: Boolean;
+begin
+  Result := (ftStreaming in SupportedFeatures);
+end;
+
+function TMidiOutput.GetSupportsVolControl: Boolean;
+begin
+  Result := (ftVolume in SupportedFeatures);
+end;
+
 {-------------------------------------------------------------------}
 { Convert the numeric return code from an MMSYSTEM function to a string
   using midioutGetErrorText. TODO: These errors aren't very helpful
@@ -286,7 +363,7 @@ end;
   some proper error strings would be nice. }
 
 
-function Tmidioutput.midioutErrorString(WError: Word): string;
+function TMidiOutput.MidiOutErrorString(WError: Word): string;
 var
   errorDesc: PChar;
 begin
@@ -305,16 +382,16 @@ end;
 {-------------------------------------------------------------------}
 { Set the output device ID and change the other properties to match }
 
-procedure Tmidioutput.SetDeviceID(DeviceID: Cardinal);
+procedure TMidiOutput.SetDeviceID(DeviceID: Cardinal);
 var
   midioutCaps: TmidioutCaps;
 begin
   if FState = mosOpen then
-    raise EmidioutputError.Create('Change to DeviceID while device was open')
+    raise EMidiOutputError.Create('Change to DeviceID while device was open')
   else
     if (DeviceID >= midioutGetNumDevs) and
       (DeviceID <> MIDI_MAPPER) then
-      raise EmidioutputError.Create('Invalid device ID')
+      raise EMidiOutputError.Create('Invalid device ID')
     else
     begin
       FDeviceID := DeviceID;
@@ -330,7 +407,7 @@ begin
         sizeof(TmidioutCaps)
       );
       if Ferror > 0 then
-        raise EmidioutputError.Create(midioutErrorString(FError));
+        raise EMidiOutputError.Create(MidiOutErrorString(FError));
 
       with midiOutCaps do
       begin
@@ -343,6 +420,8 @@ begin
         FSupport := dwSupport;
       end;
 
+      if Assigned(FOnChangeDevice) then
+        FOnChangeDevice(Self);
     end;
 end;
 
@@ -355,14 +434,14 @@ end;
   Exception if output device with matching name not found,
   or if output device is open }
 
-procedure Tmidioutput.SetProductName(NewProductName: string);
+procedure TMidiOutput.SetProductName(NewProductName: string);
 var
   midioutCaps: TmidioutCaps;
   testDeviceID: Integer;
   testProductName: string;
 begin
   if FState = mosOpen then
-    raise EmidioutputError.Create('Change to ProductName while device was open')
+    raise EMidiOutputError.Create('Change to ProductName while device was open')
   else
   { Don't set the name if the component is reading properties because
   the saved Productname will be from the machine the application was compiled
@@ -376,7 +455,7 @@ begin
         FError :=
           midioutGetDevCaps(testDeviceID, @midioutCaps, sizeof(TmidioutCaps));
         if Ferror > 0 then
-          raise EmidioutputError.Create(midioutErrorString(FError));
+          raise EMidiOutputError.Create(MidiOutErrorString(FError));
         testProductName := StrPas(midioutCaps.szPname);
         if testProductName = NewProductName then
         begin
@@ -385,7 +464,7 @@ begin
         end;
       end;
       if FProductName <> NewProductName then
-        raise EmidioutputError.Create('MIDI output Device ' +
+        raise EMidiOutputError.Create('MIDI output Device ' +
           NewProductName + ' not installed')
       else
         SetDeviceID(testDeviceID);
@@ -409,15 +488,19 @@ begin
       'Change to Product Technology while device was open')
   else
   begin
-       { Loop uses -1 to test for MIDI_MAPPER as well }
+    { Loop uses -1 to test for MIDI_MAPPER as well }
     for testDeviceID := -1 to (midiOutGetNumDevs - 1) do
     begin
-      FError :=
-        midiOutGetDevCaps(testDeviceID,
-        @midiOutCaps, sizeof(TMidiOutCaps));
-      if Ferror > 0 then
+      // get device info
+      FError := midioutGetDevCaps(testDeviceID, @midioutCaps,
+        sizeof(TmidioutCaps));
+
+      if FError > 0 then
         raise EMidiOutputError.Create(MidiOutErrorString(FError));
-      testTechnology := OutPortTech(midiOutCaps.wTechnology);
+
+      // translate to OutPortTech
+      testTechnology := OutPortTech(midioutCaps.wTechnology);
+      // and test for support
       if testTechnology = NewTechnology then
       begin
         FTechnology := NewTechnology;
@@ -425,16 +508,18 @@ begin
       end;
     end;
     if FTechnology <> NewTechnology then
-      raise EMidiOutputError.Create('MIDI output technology ' +
-        TechName[NewTechnology] + ' not installed')
+      raise EMidiOutputError.Create
+        ('MIDI output technology ' + TechName[NewTechnology]
+          + ' not installed')
     else
+      // switch to new device if tech was found
       SetDeviceID(testDeviceID);
   end;
 end;
 
 {-------------------------------------------------------------------}
 
-function Tmidioutput.Open: Boolean;
+function TMidiOutput.Open: Boolean;
 var
   hMem: THandle;
 begin
@@ -460,7 +545,7 @@ begin
       CALLBACK_WINDOW); }
     if (FError <> 0) then
    { TODO: use CreateFmtHelp to add MIDI device name/ID to message }
-      raise EmidioutputError.Create(midioutErrorString(FError))
+      raise EMidiOutputError.Create(MidiOutErrorString(FError))
     else
     begin
       Result := True;
@@ -489,7 +574,7 @@ begin
 
   FError := midiOutShortMsg(FMidiHandle, thisMsg);
   if Ferror > 0 then
-    raise EmidioutputError.Create(midioutErrorString(FError));
+    raise EMidiOutputError.Create(MidiOutErrorString(FError));
 end;
 
 {-------------------------------------------------------------------}
@@ -533,7 +618,7 @@ end;
 
 {-------------------------------------------------------------------}
 
-procedure Tmidioutput.PutMidiEvent(theEvent: TMyMidiEvent);
+procedure TMidiOutput.PutMidiEvent(theEvent: TMyMidiEvent);
 begin
   if FState <> mosOpen then
     raise EMidiOutputError.Create('MIDI Output device not open');
@@ -551,6 +636,41 @@ end;
 
 {-------------------------------------------------------------------}
 
+procedure TMidiOutput.NoteAftertouch(const Channel, Note, NewDynamics: Byte);
+begin
+  // See NoteOff for details
+  PutShort(MIDI_KEYAFTERTOUCH or ($0F and Channel), Note, NewDynamics);
+end;
+
+function TMidiOutput.CacheDrumPatches(const Patch: Cardinal;
+  var KeyArray: TKeyPatchArray; const OperationFlag: Byte): Boolean;
+begin
+  FError := midiOutCacheDrumPatches(FMIDIHandle, Patch, @KeyArray,
+    OperationFlag);
+
+  if FError <> MMSYSERR_NOERROR then
+  begin
+    Result := False;
+    //raise EMidiOutputError.Create(MidiOutErrorString(FError));
+  end
+  else
+    Result := True;
+end;
+
+function TMidiOutput.CachePatches(const Bank: Cardinal;
+  var PatchArray: TKeyPatchArray; const OperationFlag: Byte): Boolean;
+begin
+  FError := midiOutCachePatches(FMIDIHandle, Bank, @PatchArray, OperationFlag);
+
+  if FError <> MMSYSERR_NOERROR then
+  begin
+    Result := False;
+    //raise EMidiOutputError.Create(MidiOutErrorString(FError));
+  end
+  else
+    Result := True;
+end;
+
 function TMidiOutput.ChangeDevice(const NewDeviceID: Cardinal): Boolean;
 begin
   Result := Close;
@@ -561,7 +681,24 @@ begin
   end;
 end;
 
-function Tmidioutput.Close: Boolean;
+procedure TMidiOutput.ChangeInstrument(const Channel, NewInstrument: Byte);
+begin
+  ProgramChange(Channel, NewInstrument);
+end;
+
+procedure TMidiOutput.ChannelAftertouch(const Channel, NewDynamics: Byte);
+begin
+  // See NoteOff for details
+  PutShort(MIDI_CHANAFTERTOUCH or ($0F and Channel), NewDynamics, $00);
+end;
+
+procedure TMidiOutput.ProgramChange(const Channel, NewProgram: Byte);
+begin
+  // See NoteOff for details
+  PutShort(MIDI_PROGRAMCHANGE or ($0F and Channel), NewProgram, $00);
+end;
+
+function TMidiOutput.Close: Boolean;
 begin
   Result := False;
   if FState = mosOpen then
@@ -585,9 +722,16 @@ begin
 
 end;
 
+procedure TMidiOutput.ControllerChange(const Channel, NewController,
+  Value: Byte);
+begin
+  // See NoteOff for details
+  PutShort(MIDI_CONTROLCHANGE or ($0F and Channel), NewController, Value);
+end;
+
 {-------------------------------------------------------------------}
 
-procedure TMidiOutput.SetVolume(Left: Word; Right: Word);
+procedure TMidiOutput.SetVolume(const Left, Right: Word);
 var
   dwVolume: DWORD;
 begin
@@ -599,7 +743,7 @@ end;
 
 {-------------------------------------------------------------------}
 
-procedure Tmidioutput.midioutput(var Message: TMessage);
+procedure TMidiOutput.MidiOutput(var Message: TMessage);
 { Triggered when sysex output from PutLong is complete }
 var
   MyMidiHdr: TMyMidiHdr;
@@ -621,10 +765,28 @@ begin
     MyMidiHdr.Free;
 
   { Call the user's event handler if any }
-    if Assigned(FOnmidioutput) then
-      FOnmidioutput(Self);
+    if Assigned(FOnMidiOutput) then
+      FOnMidiOutput(Self);
   end;
  { TODO: Case for MOM_PLAYBACK_DONE }
+end;
+
+procedure TMidiOutput.NoteOff(const Channel, Note: Byte;
+  const Dynamics: Byte);
+begin
+  // ($0F and Channel) kills the upper 4 bits of the byte to 0000 to ensure the
+  // OR-operation works fine to "build" the Note command. The note event just
+  // recognizes 16 channels ($00 to $0F). This way you can input any Byte
+  // value. Note that using values > 15 results in an overflow behavior
+  // (h10/d16 is channel 0, h11/d17 is channel 1, h12/d18 channel 2, a.s.o)
+  PutShort(MIDI_NOTEOFF or ($0F and Channel), Note, Dynamics);
+end;
+
+procedure TMidiOutput.NoteOn(const Channel, Note: Byte;
+  const Dynamics: Byte);
+begin
+  // See NoteOff for details
+  PutShort(MIDI_NOTEON or ($0F and Channel), Note, Dynamics);
 end;
 
 {-------------------------------------------------------------------}
@@ -635,4 +797,3 @@ begin
 end;
 
 end.
-

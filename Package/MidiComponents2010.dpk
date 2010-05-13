@@ -34,7 +34,7 @@ requires
 
 contains
   CircBuf in '..\CircBuf.pas',
-  DelphiMidiCallback in '..\DelphiMidiCallback.pas',
+  MidiCallback in '..\MidiCallback.pas',
   MidiCons in '..\MidiCons.pas',
   MidiDefs in '..\MidiDefs.pas',
   MidiFile in '..\MidiFile.pas',

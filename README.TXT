@@ -1,7 +1,46 @@
+ Delphi MIDI I/O components               Version 7.0 XX Month 2010
+ --------------------------               ---------------------------
+
+This release incorporates changes neccessary for use with newer
+Delphi releases (developed under Delphi 2010 Professional), esp.
+the new unicode support since D2009 and the generic mapping to the *W
+API functions by MMSystem. Components should work in D6 and up.
+
+It introduces new features to MidiIn/Out, DeviceID reverted to the
+intended Cardinal handling as described by the Win32 SDK (MSDN) and
+much more. I've also reformatted most of the code to meet modern
+standards, moved the Examples to a new folder and created a new
+package for visual use of the components. Components have been
+tested to work on WinXP (32bit) and Win7 (64bit).
+
+Main intention was to have better MIDI I/O components for my Line6
+project. Since the original source code was released as PUBLIC DOMAIN
+I've changed the licensing to the MPL 1.1 to encourage further
+development everyone can benefit from. Big THANKS to David Churcher.
+His 13 years old components are the base for these improvements!
+Thanks to turboPASCAL and FAlter for adding modern Delphi support.
+
+Download & issue tracker can be found at http://saso-labs.com/midi
+German discussion thread located at <DP link>
+
+- Manuel Kroeber <manuel.kroeber@googlemail.com>; Germany 2010
+
+
+ Delphi MIDI I/O components               Version 6.0 16 Oct 2007
+ --------------------------               ---------------------------
+
 Version 6.1 (16. Oktober 2007)
 Aktive Bereichsprüfung führte zu Exceptions - vermutlich verwendet die
 MMSystem einen falschen Typ, denn Integer wäre logischer als Cardinal,
 da -1 definitiv erlaubt ist (MIDI-Mapper).
+
+--- English Translation by Manuel Kroeber/2010
+Activated range checking is leading to exceptions. Maybe because the
+MMSystem seems to use a wrong type, because Integer would be a more
+logical choice than Cardinal, because -1 is allowed (MS MIDI Mapper).
+
+v6.1 was done by FAlter, Member of DelphiPraxis.net board.
+
 
  Delphi MIDI I/O Components               Version 6.0 30. Juni 2005
  --------------------------               ---------------------------
@@ -15,6 +54,16 @@ Dieses Package hier wurde für Delphi 6 entwickelt.
 
 Mfg
 FAlter
+
+--- English Translation by Manuel Kroeber/2010
+This ISN'T the original package. The files have been improved by
+turboPASCAL, member of DelphiPraxis.net board.
+
+This package has been developed for use with Delphi 6.
+
+Best regards,
+FAlter (member of DelphiPraxis.net board)
+
 
 --- Original ---
  Delphi MIDI I/O Components               Version 3.0  9 June 1997

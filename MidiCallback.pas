@@ -17,7 +17,7 @@
 
 {MIDI callback for Delphi, was DLL for Delphi 1}
 
-unit DelphiMidiCallback;
+unit MidiCallback;
 
 { These segment options required for the MIDI callback functions }
 {$C PRELOAD FIXED PERMANENT}
