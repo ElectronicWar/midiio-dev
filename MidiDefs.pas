@@ -54,13 +54,16 @@ type
 		TimerId: Word;				{ Multimedia timer ID of current event }
 	end;
 
-  // for NoteOn/Off
-  TMidiChannel = (
+  TMidiChannel = 0..15;
+
+  TMidiChannelNamed = (
     ch00, ch01, ch02, ch03,
     ch04, ch05, ch06, ch07,
     ch08, ch09, ch10, ch11,
     ch12, ch13, ch14, ch15
   );
+
+  TMidiChannels = set of TMidiChannel;
 
   TFeature = (
     ftCaching, ftStreaming, ftVolume, ftStereoVolume
@@ -68,12 +71,6 @@ type
 
   TFeatureSet = set of TFeature;
 
-  // For patch caching.
-  // http://msdn.microsoft.com/en-us/library/dd757122(VS.85).aspx
-  // Each array element represents a key with 16 midi channels (word = 16 bit).
-  // The bit represents on or off of the channel for this key for called
-  // command, e.g. drum patch caching. Defined KEYARRAY and PATCHARRAY are equal
-  TKeyPatchArray = array[0..(MIDIPATCHSIZE-1)] of Word;
 implementation
 
 

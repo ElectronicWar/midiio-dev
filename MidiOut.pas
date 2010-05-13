@@ -117,7 +117,7 @@ uses
   SysUtils, WinTypes, WinProcs, Classes, Messages, Controls,
 
   MMSystem,
-  CircBuf, MidiType, MidiDefs, MidiCons, MidiCallback;
+  CircBuf, MidiType, MidiDefs, MidiCons, MidiCallback, MidiKeyPatchArray;
 
 type
   MidiOutputState = (mosOpen, mosClosed);
