@@ -174,8 +174,8 @@ type
 
     // playing attributes
     playing: boolean;
-    PlayStartTime: integer;
-    currentTime: integer; // Current playtime in msec
+    PlayStartTime: Cardinal;
+    currentTime: Cardinal; // Current playtime in msec
     currentPos: Double; // Current Position in ticks
 
     procedure OnTrackReady;
@@ -201,9 +201,9 @@ type
     procedure StopPlaying;
     procedure ContinuePlaying;
 
-    procedure PlayToTime(time: integer);
-    procedure GoToTime(time: integer);
-    function GetCurrentTime: integer;
+    procedure PlayToTime(time: Cardinal);
+    procedure GoToTime(time: Cardinal);
+    function GetCurrentTime: Cardinal;
     function GetFusPerTick : Double;
     function  GetTrackLength:integer;
     function  Ready: boolean;
@@ -505,15 +505,14 @@ begin
   SetPriorityClass(MIDIFileHandle,FPriority);
 end;
 
-function TMidiFile.GetCurrentTime: integer;
+function TMidiFile.GetCurrentTime: Cardinal;
 begin
   Result := currentTime;
 end;
 
-procedure TMidifile.PlayToTime(time: integer);
+procedure TMidifile.PlayToTime(time: Cardinal);
 var
   i: integer;
-  track: TMidiTrack;
   pos: integer;
   deltaTime: integer;
 begin
@@ -532,10 +531,9 @@ begin
   currentTime := time;
 end;
 
-procedure TMidifile.GoToTime(time: integer);
+procedure TMidifile.GoToTime(time: Cardinal);
 var
   i: integer;
-  track: TMidiTrack;
   pos: integer;
 begin
   // this function should be changed because FusPerTick might not be constant
@@ -632,11 +630,10 @@ var
   len: integer;
   str: string;
   midiEvent: PMidiEvent;
-  i: integer;
   us_per_quarter: integer;
 begin
   chunkIndex := chunkData;
-//  inc(chunkIndex);
+  // inc(chunkIndex);
   event := 0;
   if chunkType = track then
   begin
@@ -656,110 +653,109 @@ begin
 
       if event = $FF then
       begin
-{        case chunkIndex^ of
-        $00: // sequence number, not implemented jet
+        case chunkIndex^ of
+          $00: // sequence number, not implemented jet
             begin
               inc(chunkIndex); // $02
               inc(chunkIndex);
             end;
-        $01 .. $0f: // text events  FF ty len text
+          $01 .. $0F: // text events  FF ty len text
             begin
               New(midiEvent);
               midiEvent.event := $FF;
-              midiEvent.data1 := chunkIndex^;     // type is stored in data1
-              midiEvent.dticks := dtime;
+              midiEvent.data1 := chunkIndex^; // type is stored in data1
+              midiEvent.dticks := dTime;
 
               inc(chunkIndex);
               len := ReadVarLength;
-              midiEvent.str    := ReadString(len);
+              midiEvent.str := ReadString(len);
 
               currentTrack.putEvent(midiEvent);
             end;
-        $20: // Midi channel prefix  FF 20 01 cc
-             begin
-               inc(chunkIndex); // $01
-               inc(chunkIndex); // channel
-               inc(chunkIndex);
-             end;
-        $2F: // End of track FF 2F 00
-             begin
-               inc(chunkIndex); // $00
-               inc(chunkIndex);
-             end;
-        $51: // Set Tempo  FF 51 03 tttttt
-             begin
-               inc(chunkIndex); // $03
-               inc(chunkIndex); // tt
-               inc(chunkIndex); // tt
-               inc(chunkIndex); // tt
-               inc(chunkIndex);
-             end;
-        $54: // SMPTE offset  FF 54 05 hr mn se fr ff
-             begin
-               inc(chunkIndex); // $05
-               inc(chunkIndex); // hr
-               inc(chunkIndex); // mn
-               inc(chunkIndex); // se
-               inc(chunkIndex); // fr
-               inc(chunkIndex); // ff
-               inc(chunkIndex);
-             end;
-        $58: // Time signature FF 58 04 nn dd cc bb
-             begin
-               inc(chunkIndex); // $04
-               inc(chunkIndex); // nn
-               inc(chunkIndex); // dd
-               inc(chunkIndex); // cc
-               inc(chunkIndex); // bb
-               inc(chunkIndex);
-             end;
-        $59: // Key signature FF 59 02 df mi
-             begin
-               inc(chunkIndex); // $02
-               inc(chunkIndex); // df
-               inc(chunkIndex); // mi
-               inc(chunkIndex);
-             end;
-        $7F: // Sequence specific Meta-event
+          $20: // Midi channel prefix  FF 20 01 cc
+            begin
+              inc(chunkIndex); // $01
+              inc(chunkIndex); // channel
+              inc(chunkIndex);
+            end;
+          $2F: // End of track FF 2F 00
+            begin
+              inc(chunkIndex); // $00
+              inc(chunkIndex);
+            end;
+          $51: // Set Tempo  FF 51 03 tttttt
+            begin
+              inc(chunkIndex); // $03
+              inc(chunkIndex); // tt
+              inc(chunkIndex); // tt
+              inc(chunkIndex); // tt
+              inc(chunkIndex);
+            end;
+          $54: // SMPTE offset  FF 54 05 hr mn se fr ff
+            begin
+              inc(chunkIndex); // $05
+              inc(chunkIndex); // hr
+              inc(chunkIndex); // mn
+              inc(chunkIndex); // se
+              inc(chunkIndex); // fr
+              inc(chunkIndex); // ff
+              inc(chunkIndex);
+            end;
+          $58: // Time signature FF 58 04 nn dd cc bb
+            begin
+              inc(chunkIndex); // $04
+              inc(chunkIndex); // nn
+              inc(chunkIndex); // dd
+              inc(chunkIndex); // cc
+              inc(chunkIndex); // bb
+              inc(chunkIndex);
+            end;
+          $59: // Key signature FF 59 02 df mi
+            begin
+              inc(chunkIndex); // $02
+              inc(chunkIndex); // df
+              inc(chunkIndex); // mi
+              inc(chunkIndex);
+            end;
+          $7F: // Sequence specific Meta-event
             begin
               inc(chunkIndex);
               len := ReadVarLength;
               str := ReadString(len);
             end;
         else // unknown meta event
-        }
-        begin
-          New(midiEvent);
-          midiEvent.event := $FF;
-          midiEvent.data1 := chunkIndex^; // type is stored in data1
-          midiEvent.dticks := dtime;
 
-          inc(chunkIndex);
-          len := ReadVarLength;
-          midiEvent.str := ReadString(len);
-          currentTrack.putEvent(midiEvent);
+          begin
+            New(midiEvent);
+            midiEvent.event := $FF;
+            midiEvent.data1 := chunkIndex^; // type is stored in data1
+            midiEvent.dticks := dTime;
 
-          case midiEvent.data1 of
-            $51:
-              begin
-                us_per_quarter :=
-                  (integer(byte(midiEvent.str[1])) shl 16 +
-                  integer(byte(midiEvent.str[2])) shl 8 +
-                  integer(byte(midiEvent.str[3])));
-                FBpm := 60000000 div us_per_quarter;
-                FusPerTick := us_per_quarter / deltaTicks;
-              end;
+            inc(chunkIndex);
+            len := ReadVarLength;
+            midiEvent.str := ReadString(len);
+            currentTrack.putEvent(midiEvent);
+
+            case midiEvent.data1 of
+              $51:
+                begin
+                  us_per_quarter := (integer(byte(midiEvent.str[1]))
+                      shl 16 + integer(byte(midiEvent.str[2])) shl 8 + integer
+                      (byte(midiEvent.str[3])));
+                  FBpm := 60000000 div us_per_quarter;
+                  FusPerTick := us_per_quarter / deltaTicks;
+                end;
+            end;
           end;
         end;
-//        end;
       end
       else
       begin
-      // these are all midi events
+        // these are all midi events
         New(midiEvent);
         midiEvent.event := event;
-        midiEvent.dticks := dtime;
-//         inc(chunkIndex);
+        midiEvent.dticks := dTime;
+        // inc(chunkIndex);
         case event of
           $80..$8F, // note off
           $90..$9F, // note on
@@ -944,4 +940,3 @@ begin
 end;
 
 end.
-

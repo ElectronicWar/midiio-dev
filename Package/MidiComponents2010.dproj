@@ -53,7 +53,7 @@
 			<DCCReference Include="MidiScope.dcr"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="..\CircBuf.pas"/>
-			<DCCReference Include="..\DelphiMidiCallback.pas"/>
+			<DCCReference Include="..\MidiCallback.pas"/>
 			<DCCReference Include="..\MidiCons.pas"/>
 			<DCCReference Include="..\MidiDefs.pas"/>
 			<DCCReference Include="..\MidiFile.pas"/>

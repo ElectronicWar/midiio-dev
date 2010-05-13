@@ -119,7 +119,7 @@ uses
   Classes, SysUtils, WinTypes, Messages, WinProcs,
 
   MMSystem,
-  MidiDefs, MidiType, MidiCons, CircBuf, DelphiMidiCallback;
+  MidiDefs, MidiType, MidiCons, CircBuf, MidiCallback;
 
 type
 	MidiInputState = (misOpen, misClosed, misCreating, misDestroying);

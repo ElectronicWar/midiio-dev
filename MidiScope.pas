@@ -115,9 +115,9 @@ begin
   x :=  148*BarWIdthInc+2;
   canvas.Font.Color := clGreen;
   for i := 0 to 15 do
-    Canvas.TextOut(x,((i+1)*BarHeightInc) - Canvas.font.size-3,IntToStr(i+1));
-  canvas.Pen.color := clBlack;
   begin
+    Canvas.TextOut(x,((i+1)*BarHeightInc) - Canvas.font.size-3,IntToStr(i+1));
+    canvas.Pen.color := clBlack;
     for j := 0 to 127 do
     begin
       PaintSlide(i,j,notes[i,j]);
