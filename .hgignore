@@ -1,0 +1,4 @@
+glob:__history
+glob:*.local
+glob:*.exe
+glob:*.dcu
