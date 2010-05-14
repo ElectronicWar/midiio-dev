@@ -134,7 +134,6 @@ type
     opt_Mapper);  { MIDI mapper }
   TechNameMap = array[OutPortTech] of string;
 
-
 const
   TechName: TechNameMap = (
     'None', 'MIDI Port', 'Generic Synth', 'Square Wave Synth',
@@ -149,7 +148,7 @@ type
     procedure SetDeviceID(DeviceID: Cardinal);
     procedure SetProductName(NewProductName: string);
     procedure SetTechnology(NewTechnology: OutPortTech);
-    function MidiOutErrorString(WError: Word): string;
+    function MidiOutErrorString(WError: Cardinal): string;
     function GetSupportsStreaming: Boolean;
     function GetFeaturesAsSet: TFeatureSet;
     function GetSupportsLRVolCtrl: Boolean;
@@ -164,6 +163,7 @@ type
     PBuffer: PCircularBuffer; { Output queue for PutTimedEvent, set by Open }
 
     FError: DWord; { Last MMSYSTEM error } //FAlter: DWord statt Word
+    FUseFullReset: Boolean;
 
   { Stuff from midioutCAPS }
     FDriverVersion: Version;  { Driver version from midioutGetDevCaps }
@@ -177,6 +177,7 @@ type
                                 patch caching etc. }
     FNumdevs: Word;           { Number of MIDI output devices on system }
 
+  { Events }
     FOnMidiOutput: TNotifyEvent; { Sysex output finished }
     FOnChangeDevice: TNotifyEvent; // after successfully changing the DeviceID
   published
@@ -208,6 +209,8 @@ type
     property SupportsVolumeControl: Boolean read GetSupportsVolControl;
     property SupportsStereoVolumeControl: Boolean read GetSupportsLRVolCtrl;
 
+    property FullResetOnClose: Boolean read FUseFullReset write FUseFullReset;
+
   { Methods }
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -219,7 +222,12 @@ type
     procedure PutMidiEvent(theEvent: TMyMidiEvent); virtual;
     procedure PutShort(MidiMessage: Byte; Data1: Byte; Data2: Byte); virtual;
     procedure PutLong(TheSysex: Pointer; msgLength: Word); virtual;
-    procedure SetVolume(const Left, Right: Word);
+
+    procedure SetVolume(Left, Right: Word);
+    // right volume is ignored if stereo volume is not supported
+    procedure GetVolume(var Left, Right: Word);
+    // right = left if stereo volume is not supported
+
 
   { Methods encapsulating PutShort provided for your convenience }
     procedure NoteOn(const Channel, Note: Byte; const Dynamics: Byte = 127);
@@ -266,39 +274,13 @@ procedure Register;
 {-------------------------------------------------------------------}
 implementation
 
-(* Not used in Delphi 3
-
-{ This is the callback procedure in the external DLL.
-  It's used when midioutOpen is called by the Open method.
-  There are special requirements and restrictions for this callback
-  procedure (see midioutOpen in MMSYSTEM.HLP) so it's impractical to
-  make it an object method }
-
-{$IFDEF WIN32}
-function midiHandler(
-    hMidiIn: HMidiIn;
-    wMsg: UINT;
-    dwInstance: DWORD;
-    dwParam1: DWORD;
-    dwParam2: DWORD): Boolean; stdcall; external 'DELMID32.DLL';
-{$ELSE}
-function midiHandler(
-    hMidiIn: HMidiIn;
-    wMsg: Word;
-    dwInstance: DWORD;
-    dwParam1: DWORD;
-    dwParam2: DWORD): Boolean; far; external 'DELPHMID.DLL';
-{$ENDIF}
-*)
-
-{-------------------------------------------------------------------}
-
 constructor TMidiOutput.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
   FState := mosClosed;
   FNumdevs := midiOutGetNumDevs;
+  FUseFullReset := False;
 
  { Create the window for callback notification }
   if not (csDesigning in ComponentState) then
@@ -356,6 +338,21 @@ begin
   Result := (ftVolume in SupportedFeatures);
 end;
 
+procedure TMidiOutput.GetVolume(var Left, Right: Word);
+var
+  dwVolume: DWORD;
+begin
+  FError := midiOutGetVolume(DeviceID, @dwVolume);
+  if FError <> MMSYSERR_NOERROR then
+    raise EMidiOutputError.Create(MidiOutErrorString(FError));
+
+  Left := WORD((dwVolume shr 16) and $00001111);
+  if SupportsStereoVolumeControl then
+    Right := WORD(dwVolume and $00001111)
+  else
+    Right := Left;
+end;
+
 {-------------------------------------------------------------------}
 { Convert the numeric return code from an MMSYSTEM function to a string
   using midioutGetErrorText. TODO: These errors aren't very helpful
@@ -363,7 +360,7 @@ end;
   some proper error strings would be nice. }
 
 
-function TMidiOutput.MidiOutErrorString(WError: Word): string;
+function TMidiOutput.MidiOutErrorString(WError: Cardinal): string;
 var
   errorDesc: PChar;
 begin
@@ -703,12 +700,15 @@ begin
   Result := False;
   if FState = mosOpen then
   begin
+    if FUseFullReset then
+    begin
+      // Note this sends a lot of fast control change messages which some synths can't handle.
+      { DONE: Make this optional. }
+      FError := midioutReset(FMidiHandle);
 
-        { Note this sends a lot of fast control change messages which some synths can't handle.
-          TODO: Make this optional. }
-{		FError := midioutReset(FMidiHandle);
-  if Ferror <> 0 then
-   raise EMidiOutputError.Create(MidiOutErrorString(FError)); }
+      if FError <> 0 then
+        raise EMidiOutputError.Create(MidiOutErrorString(FError));
+    end;
 
     FError := midioutClose(FMidiHandle);
     if Ferror <> 0 then
@@ -731,13 +731,16 @@ end;
 
 {-------------------------------------------------------------------}
 
-procedure TMidiOutput.SetVolume(const Left, Right: Word);
+procedure TMidiOutput.SetVolume(Left, Right: Word);
 var
   dwVolume: DWORD;
 begin
+  if not SupportsStereoVolumeControl then
+    Right := Left;
+
   dwVolume := (DWORD(Left) shl 16) or Right;
   FError := midiOutSetVolume(DeviceID, dwVolume);
-  if Ferror <> 0 then
+  if FError <> 0 then
     raise EMidiOutputError.Create(MidiOutErrorString(FError));
 end;
 
@@ -749,7 +752,7 @@ var
   MyMidiHdr: TMyMidiHdr;
   thisHdr: PMidiHdr;
 begin
-  if Message.Msg = Mom_Done then
+  if Message.Msg = MOM_DONE then
   begin
   { Find the MIDIHDR we used for the output. Message.lParam is its address }
     thisHdr := PMidiHdr(Message.lParam);
