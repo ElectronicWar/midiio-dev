@@ -2,3 +2,4 @@ glob:__history
 glob:*.local
 glob:*.exe
 glob:*.dcu
+glob:*.identcache
