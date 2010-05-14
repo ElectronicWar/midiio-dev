@@ -15,7 +15,7 @@ tested to work on WinXP (32bit) and Win7 (64bit).
 
 Main intention was to have better MIDI I/O components for my Line6
 project. Since the original source code was released as PUBLIC DOMAIN
-I've changed the licensing to the MPL 1.1 to encourage further
+I've changed the licensing to the MPL/GPL/LGPL to encourage further
 development everyone can benefit from. Big THANKS to David Churcher.
 His 13 years old components are the base for these improvements!
 Thanks to turboPASCAL and FAlter for adding modern Delphi support.
@@ -26,7 +26,7 @@ German discussion thread located at <DP link>
 - Manuel Kroeber <manuel.kroeber@googlemail.com>; Germany 2010
 
 
- Delphi MIDI I/O components               Version 6.0 16 Oct 2007
+ Delphi MIDI I/O components               Version 6.1 16 Oct 2007
  --------------------------               ---------------------------
 
 Version 6.1 (16. Oktober 2007)
