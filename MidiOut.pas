@@ -274,7 +274,9 @@ type
 
     procedure ControllerChange(const Channel, NewController, Value: Byte);
     procedure ProgramChange(const Channel, NewProgram: Byte);
-    procedure ChangeInstrument(const Channel, NewInstrument: Byte); deprecated 'Alias of ProgramChange';
+    procedure ChangeInstrument(const Channel: Byte;
+      const NewInstrument: TGMInstrumentPatch); // for your convenience
+
 
   { Experimental and/or untested stuff }
     // Caching. Returns true if successful. Check LastError on False.
@@ -730,9 +732,10 @@ begin
   end;
 end;
 
-procedure TMidiOutput.ChangeInstrument(const Channel, NewInstrument: Byte);
+procedure TMidiOutput.ChangeInstrument(const Channel: Byte;
+  const NewInstrument: TGMInstrumentPatch);
 begin
-  ProgramChange(Channel, NewInstrument);
+  ProgramChange(Channel, Byte(NewInstrument));
 end;
 
 procedure TMidiOutput.ChannelAftertouch(const Channel, NewDynamics: Byte);
