@@ -49,7 +49,7 @@ unit MidiKeyPatchArray;
 
 interface
 
-uses MidiDefs, MMsystem;
+uses MidiType, MMsystem;
 
 type
   // For patch caching.

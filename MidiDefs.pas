@@ -51,10 +51,9 @@ unit MidiDefs;
 
 interface
 
-uses WinProcs, WinTypes, MMsystem, Circbuf;
+uses  Windows, MMsystem, Circbuf;
 
 type
-
 	{-------------------------------------------------------------------}
 	{ This is the information about the control that must be accessed by
 	  the MIDI input callback function in the DLL at interrupt time }
@@ -74,31 +73,13 @@ type
 		PBuffer: PCircularBuffer;	{ Pointer to MIDI output data buffer }
 		hWindow: HWnd;				{ Control's window handle }
 		TimeToNextEvent: DWORD;	{ Delay to next event after timer set }
-		MIDIHandle: HMidiOut;		{ MIDI handle to send output to 
+		MIDIHandle: HMidiOut;		{ MIDI handle to send output to
 									(copy of component's FMidiHandle property) }
 		PeriodMin: Word;			{ Multimedia timer minimum period supported }
 		PeriodMax: Word;			{ Multimedia timer maximum period supported }
 		TimerId: Word;				{ Multimedia timer ID of current event }
 	end;
 
-  TMidiChannel = 0..15;
-
-  TMidiChannelNamed = (
-    ch00, ch01, ch02, ch03,
-    ch04, ch05, ch06, ch07,
-    ch08, ch09, ch10, ch11,
-    ch12, ch13, ch14, ch15
-  );
-
-  TMidiChannels = set of TMidiChannel;
-
-  TFeature = (
-    ftCaching, ftStreaming, ftVolume, ftStereoVolume
-  );
-
-  TFeatureSet = set of TFeature;
-
 implementation
-
 
 end.
