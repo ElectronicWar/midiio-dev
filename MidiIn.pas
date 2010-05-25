@@ -154,7 +154,7 @@ type
 	EMidiInputError = class(Exception);
 
 	{-------------------------------------------------------------------}
-  TMidiInput = class(TComponent)
+  TMidiInput = class(TMidiIO)
   private
     Handle: THandle; { Window handle used for callback notification }
     FDeviceID: Cardinal; { MIDI device ID }
@@ -173,7 +173,7 @@ type
     { Queue }
     FCapacity: Word; { Buffer capacity }
     PBuffer: PCircularBuffer; { Low-level MIDI input buffer created by Open method }
-    FNumdevs: Word; { Number of input devices on system }
+    FNumDevs: Cardinal; { Number of input devices on system }
 
     { Events }
     FOnMIDIInput: TNotifyEvent; { MIDI Input arrived }
@@ -209,8 +209,6 @@ type
     property MID: Word read FMID; { Manufacturer ID }
     property PID: Word read FPID; { Product ID }
 
-    property Numdevs: Word read FNumdevs;
-
     property MessageCount: Word read GetEventCount;
     { TODO: property to select which incoming messages get filtered out }
 
@@ -219,7 +217,12 @@ type
     procedure Start;
     procedure Stop;
 
-    procedure ChangeDevice(const NewDeviceID: Cardinal);
+    function DeviceCount: Cardinal; override;
+
+    procedure OpenAndStart;
+
+    procedure ChangeDevice(const NewDeviceID: Cardinal;
+      const OpenAndStartAfterChange: Boolean = True);
 
     { Get first message in input queue }
     function GetMidiEvent: TMyMidiEvent;
@@ -266,19 +269,19 @@ begin
     MidiHdrs := Nil;
 
 	{ Set defaults }
-	SetDeviceID(0);
+  if FNumDevs > 0 then
+  	SetDeviceID(0);
 	FCapacity := 1024;
 	FSysexBufferSize := 4096;
 	FSysexBufferCount := 16;
 
 	{ Create the window for callback notification }
 	if not (csDesigning in ComponentState) then
-		begin
+  begin
 		Handle := Classes.AllocateHWnd(MidiInput);
-		end;
+	end;
 
 	FState := misClosed;
-
 end;
 
 {-------------------------------------------------------------------}
@@ -296,6 +299,12 @@ begin
 
 	Classes.DeallocateHWnd(Handle);
 	inherited Destroy;
+end;
+
+function TMidiInput.DeviceCount: Cardinal;
+begin
+  FNumDevs := midiInGetNumDevs;
+  Result := FNumDevs;
 end;
 
 {-------------------------------------------------------------------}
@@ -391,7 +400,7 @@ end;
 procedure TMidiInput.SetProductName( NewProductName: String );
 var
 	MidiInCaps: TMidiInCaps;
-	testDeviceID: Word;
+	testDeviceID: Cardinal;
 	testProductName: String;
 begin
 	if FState = misOpen then
@@ -559,6 +568,12 @@ begin
 
 end;
 
+procedure TMidiInput.OpenAndStart;
+begin
+  Open;
+  Start;
+end;
+
 {-------------------------------------------------------------------}
 function TMidiInput.GetMidiEvent: TMyMidiEvent;
 var
@@ -612,6 +627,7 @@ begin
 end;
 
 {-------------------------------------------------------------------}
+
 function TMidiInput.GetEventCount: Word;
 begin
 	if FState = misOpen then
@@ -621,15 +637,19 @@ begin
 end;
 
 {-------------------------------------------------------------------}
-procedure TMidiInput.ChangeDevice(const NewDeviceID: Cardinal);
+procedure TMidiInput.ChangeDevice(const NewDeviceID: Cardinal;
+  const OpenAndStartAfterChange: Boolean);
 begin
   if NewDeviceID <> FDeviceID then
   begin
     Stop;
     Close;
     DeviceID := NewDeviceID;
-    Open;
-    Start;
+    if OpenAndStartAfterChange then
+    begin
+      Open;
+      Start;
+    end;
   end;
 end;
 

@@ -49,7 +49,7 @@ unit MidiCons;
 
 interface
 
-uses Messages;
+uses Messages, SysUtils;
 
 const
 	MIDI_ALLNOTESOFF = $7B;
@@ -80,6 +80,35 @@ const
   MIDIMAPPER     = LongWord(-1); // UINT = LongWord as in Windows.pas
   MIDI_MAPPER    = LongWord(-1);
 
+  function MidiMessageToStr(const MidiMessage: Byte): string;
+
 implementation
+
+function MidiMessageToStr(const MidiMessage: Byte): string;
+begin
+  case MidiMessage of
+  	MIDI_ALLNOTESOFF     : Result := 'MIDI_ALLNOTESOFF';
+    MIDI_NOTEON          : Result := 'MIDI_NOTEON';
+    MIDI_NOTEOFF         : Result := 'MIDI_NOTEOFF';
+    MIDI_KEYAFTERTOUCH   : Result := 'MIDI_KEYAFTERTOUCH';
+    MIDI_CONTROLCHANGE   : Result := 'MIDI_CONTROLCHANGE';
+    MIDI_PROGRAMCHANGE   : Result := 'MIDI_PROGRAMCHANGE';
+    MIDI_CHANAFTERTOUCH  : Result := 'MIDI_CHANAFTERTOUCH';
+    MIDI_PITCHBEND       : Result := 'MIDI_PITCHBEND';
+    MIDI_SYSTEMMESSAGE   : Result := 'MIDI_BEGINSYSEX or MIDI_SYSTEMMESSAGE';
+    MIDI_MTCQUARTERFRAME : Result := 'MIDI_MTCQUARTERFRAME';
+    MIDI_SONGPOSPTR      : Result := 'MIDI_SONGPOSPTR';
+    MIDI_SONGSELECT      : Result := 'MIDI_SONGSELECT';
+    MIDI_ENDSYSEX        : Result := 'MIDI_ENDSYSEX';
+    MIDI_TIMINGCLOCK     : Result := 'MIDI_TIMINGCLOCK';
+    MIDI_START           : Result := 'MIDI_START';
+    MIDI_CONTINUE        : Result := 'MIDI_CONTINUE';
+    MIDI_STOP            : Result := 'MIDI_STOP';
+    MIDI_ACTIVESENSING   : Result := 'MIDI_ACTIVESENSING';
+    MIDI_SYSTEMRESET     : Result := 'MIDI_SYSTEMRESET';
+  else
+    Result := 'Unknown MIDI Message "'+IntToStr(MIDIMessage)+'"';
+  end;
+end;
 
 end.
