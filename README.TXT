@@ -2,9 +2,8 @@
  --------------------------               ---------------------------
 
 This release incorporates changes neccessary for use with newer
-Delphi releases (developed under Delphi 2010 Professional), esp.
-the new unicode support since D2009 and the generic mapping to the *W
-API functions by MMSystem. Components should work in D6 and up.
+Delphi releases (developed under Delphi 2010 Professional).
+Components should work in D6 and up.
 
 It introduces new features to MidiIn/Out, DeviceID reverted to the
 intended Cardinal handling as described by the Win32 SDK (MSDN) and
