@@ -51,6 +51,12 @@ interface
 uses Classes, Wintypes, Messages, MMSystem, MidiDefs, Circbuf;
 
 type
+
+  TMidiIO = class(TComponent)
+  public
+    function DeviceCount: Cardinal; virtual; abstract;
+  end;
+
 	{-------------------------------------------------------------------}
 	{ A MIDI input/output event }
 	TMyMidiEvent = class(TPersistent)

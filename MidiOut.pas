@@ -69,7 +69,7 @@ unit MidiOut;
  output device by name (the DeviceID property will change to match).
  Exception if this property is changed while the device is open.
 
- Numdevs: Number of MIDI output devices installed on the system. This
+ NumDevs: Number of MIDI output devices installed on the system. This
  is the value returned by midiOutGetNumDevs. It's included for
  completeness.
 
@@ -170,7 +170,7 @@ const
 
 {-------------------------------------------------------------------}
 type
-  TMidiOutput = class(TComponent)
+  TMidiOutput = class(TMidiIO)
   private
     function GetSupportsCaching: Boolean;
     procedure MidiOutput(var Message: TMessage);
@@ -205,7 +205,7 @@ type
                                 device responds to (internal synth) }
     FSupport: DWORD;          { Technology supported (volume control,
                                 patch caching etc. }
-    FNumdevs: Word;           { Number of MIDI output devices on system }
+    FNumDevs: Word;           { Number of MIDI output devices on system }
 
   { Events }
     FOnMidiOutput: TNotifyEvent; { Sysex output finished }
@@ -230,7 +230,7 @@ type
     property Support: DWORD { Technology supported (volume control, }
       read FSupport; { patch caching etc. }
     property Error: DWord read FError; //FAlter DWord statt Word
-    property Numdevs: Word read FNumdevs;
+    property NumDevs: Word read FNumDevs;
 
     property SupportedFeatures: TFeatureSet read GetFeaturesAsSet;
     // if ftStereoVolume is supported, ftVolume is allways supported, too.
@@ -247,7 +247,10 @@ type
 
     function Open: Boolean; virtual;
     function Close: Boolean; virtual;
-    function ChangeDevice(const NewDeviceID: Cardinal): Boolean; virtual;
+    function ChangeDevice(const NewDeviceID: Cardinal;
+      const OpenAfterChange: Boolean = True): Boolean; virtual;
+
+    function DeviceCount: Cardinal; override;
 
     procedure PutMidiEvent(theEvent: TMyMidiEvent); virtual;
     procedure PutShort(MidiMessage: Byte; Data1: Byte; Data2: Byte); virtual;
@@ -256,7 +259,7 @@ type
     procedure SetVolume(Left, Right: Word); overload;
     // right volume is ignored if stereo volume is not supported
 		procedure SetVolume(const MonoVolume: Word); overload;
-		// use this is you dont care about stereo volume
+		// use this is you don't care about stereo volume
     procedure GetVolume(var Left, Right: Word); overload;
     // right = left if stereo volume is not supported
     function GetVolume: Word; overload;
@@ -295,9 +298,7 @@ type
     property ProductName: string read FProductName write SetProductName;
 
     property DeviceID: Cardinal read FDeviceID write SetDeviceID default 0;
-  { TODO: midiOutGetVolume? Or two properties for Left and Right volume?
-    Is it worth it??
-      midiOutMessage?? Does anyone use this? }
+  { TODO: midiOutMessage?? Does anyone use this? }
 
  { Events }
     property OnMidiOutput: TNotifyEvent
@@ -316,7 +317,7 @@ begin
   inherited Create(AOwner);
 
   FState := mosClosed;
-  FNumdevs := midiOutGetNumDevs;
+  FNumDevs := midiOutGetNumDevs;
   FUseFullReset := False;
 
  { Create the window for callback notification }
@@ -336,6 +337,12 @@ begin
     GlobalSharedLockedFree(PCtlinfo^.hMem, PCtlInfo);
   Classes.DeallocateHWnd(Handle);
   inherited Destroy;
+end;
+
+function TMidiOutput.DeviceCount: Cardinal;
+begin
+  FNumDevs := midiOutGetNumDevs;
+  Result := FNumDevs;
 end;
 
 function TMidiOutput.GetFeaturesAsSet: TFeatureSet;
@@ -623,14 +630,11 @@ begin
     Pctlinfo^.hWindow := Handle; { Control's window handle }
 
     FError := midioutOpen(@FMidiHandle,
-      Cardinal(FDeviceId), //FAlter MMSystem falscher Typ?
+      Cardinal(FDeviceId),
       DWORD(@midiHandler),
       DWORD(PCtlInfo),
       CALLBACK_FUNCTION);
-{                FError := midioutOpen(@FMidiHandle, FDeviceId,
-      Handle,
-      DWORD(PCtlInfo),
-      CALLBACK_WINDOW); }
+
     if (FError <> 0) then
    { TODO: use CreateFmtHelp to add MIDI device name/ID to message }
       raise EMidiOutputError.Create(MidiOutErrorString(FError))
@@ -759,13 +763,15 @@ begin
     Result := True;
 end;
 
-function TMidiOutput.ChangeDevice(const NewDeviceID: Cardinal): Boolean;
+function TMidiOutput.ChangeDevice(const NewDeviceID: Cardinal;
+  const OpenAfterChange: Boolean): Boolean;
 begin
   Result := Close;
   if Result then
   begin
     DeviceID := NewDeviceID;
-    Result := Open;
+    if OpenAfterChange then
+      Result := Open;
   end;
 end;
 
