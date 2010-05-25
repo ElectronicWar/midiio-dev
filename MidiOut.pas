@@ -177,7 +177,8 @@ type
     procedure SetDeviceID(DeviceID: Cardinal);
     procedure SetProductName(NewProductName: string);
     procedure SetTechnology(NewTechnology: OutPortTech);
-    function MidiOutErrorString(WError: Cardinal): string;
+    function MidiOutErrorString(const WError: Cardinal;
+      const ErrorContext: TMIDIErrorContext = ecGeneric): string;
     function GetSupportsStreaming: Boolean;
     function GetFeaturesAsSet: TFeatureSet;
     function GetSupportsLRVolCtrl: Boolean;
@@ -395,9 +396,13 @@ begin
   if FError <> MMSYSERR_NOERROR then
     raise EMidiOutputError.Create(MidiOutErrorString(FError));
 
-  Left := WORD((dwVolume shr 16) and $00001111);
+  // Volume is stored as stereo value in the higher and lower WORD of
+  // an unsigned DWORD (Cardinal). MSB = left, LSB = right channel.
+
+  // move high WORD to the right & blank high WORD area to get high WORD
+  Left := WORD((dwVolume shr 16) and $0000FFFF);
   if SupportsStereoVolumeControl then
-    Right := WORD(dwVolume and $00001111)
+    Right := WORD(dwVolume and $0000FFFF) // blank high WORD to get low WORD
   else
     Right := Left;
 end;
@@ -406,23 +411,55 @@ end;
 { Convert the numeric return code from an MMSYSTEM function to a string
   using midioutGetErrorText. TODO: These errors aren't very helpful
   (e.g. "an invalid parameter was passed to a system function") so
-  some proper error strings would be nice. }
+  some proper error strings would be nice.
+
+  MKr: Problem with an enhancement: Many functions share the same error codes
+  but give them different meanings. This function needs to know the context
+  to output a suitable error message.
+  }
 
 
-function TMidiOutput.MidiOutErrorString(WError: Cardinal): string;
-var
-  errorDesc: PChar;
-begin
-  errorDesc := nil;
-  try
-    errorDesc := StrAlloc(MAXERRORLENGTH);
-    if midioutGetErrorText(WError, errorDesc, MAXERRORLENGTH) = 0 then
-      result := StrPas(errorDesc)
-    else
-      result := 'Specified error number is out of range';
-  finally
-    if errorDesc <> nil then StrDispose(errorDesc);
+function TMidiOutput.MidiOutErrorString(const WError: Cardinal;
+  const ErrorContext: TMIDIErrorContext): string;
+
+  function GetGenericErrorMessage(ErrorCode: Cardinal): string;
+  var
+    errorDesc: PChar;
+  begin
+    errorDesc := nil;
+    try
+      errorDesc := StrAlloc(MAXERRORLENGTH);
+      if midioutGetErrorText(ErrorCode, errorDesc, MAXERRORLENGTH) = 0 then
+        Result := StrPas(errorDesc)
+      else
+        Result := 'Specified error number is out of range';
+    finally
+      if errorDesc <> nil then
+        StrDispose(errorDesc);
+    end;
   end;
+
+var
+  SpecificError: string;
+begin
+  case ErrorContext of
+    ecGeneric: Result := GetGenericErrorMessage(WError);
+    ecCaching: begin
+      case WError of
+        MMSYSERR_INVALFLAG: SpecificError := 'The flag specified by wFlags is invalid.';
+        MMSYSERR_INVALHANDLE: SpecificError := 'The specified device handle is invalid.';
+        MMSYSERR_INVALPARAM: SpecificError := 'The array pointed to by lpPatchArray is invalid.';
+        MMSYSERR_NOMEM: SpecificError := 'The device does not have enough memory to cache all of the requested patches.';
+        MMSYSERR_NOTSUPPORTED: SpecificError := 'The specified device does not support patch caching.';
+      end;
+    end;
+  end;
+
+  // Fallback
+  if SpecificError = '' then
+    Result := GetGenericErrorMessage(WError)
+  else
+    Result := SpecificError;
 end;
 
 {-------------------------------------------------------------------}

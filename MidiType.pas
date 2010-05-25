@@ -95,6 +95,11 @@ type
 
   TFeatureSet = set of TFeature;
 
+  TMIDIErrorContext = (
+    ecGeneric,
+    ecCaching
+  );
+
   TGMInstrumentPatch = (
     // Piano
     gmiAcousticGrandPiano, gmiBrightAcousticPiano,

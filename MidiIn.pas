@@ -255,28 +255,6 @@ implementation
 
 Uses  Graphics, Controls, Forms, Dialogs;
 
-(* Not used in Delphi 3
-{ This is the callback procedure in the external DLL.
-  It's used when midiInOpen is called by the Open method.
-  There are special requirements and restrictions for this callback
-  procedure (see midiInOpen in MMSYSTEM.HLP) so it's impractical to
-  make it an object method }
-{$IFDEF WIN32}
-function midiHandler(
-		  hMidiIn: HMidiIn;
-		  wMsg: UINT;
-		  dwInstance: DWORD;
-		  dwParam1: DWORD;
-		  dwParam2: DWORD): Boolean; stdcall; external 'DELMID32.DLL';
-{$ELSE}
-procedure midiHandler(
-		  hMidiIn: HMidiIn;
-		  wMsg: Word;
-		  dwInstance: DWORD;
-		  dwParam1: DWORD;
-		  dwParam2: DWORD); far; external 'DELPHMID';
-{$ENDIF}
-*)
 {-------------------------------------------------------------------}
 constructor TMidiInput.Create(AOwner:TComponent);
 begin
