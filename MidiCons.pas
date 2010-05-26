@@ -86,7 +86,7 @@ implementation
 
 function MidiMessageToStr(const MidiMessage: Byte): string;
 begin
-  case MidiMessage of
+  case (MidiMessage and $F0) of
   	MIDI_ALLNOTESOFF     : Result := 'MIDI_ALLNOTESOFF';
     MIDI_NOTEON          : Result := 'MIDI_NOTEON';
     MIDI_NOTEOFF         : Result := 'MIDI_NOTEOFF';
@@ -107,7 +107,9 @@ begin
     MIDI_ACTIVESENSING   : Result := 'MIDI_ACTIVESENSING';
     MIDI_SYSTEMRESET     : Result := 'MIDI_SYSTEMRESET';
   else
-    Result := 'Unknown MIDI Message "'+IntToStr(MIDIMessage)+'"';
+    Result := 'Unknown MIDI Message 0x' +
+      IntToHex(MidiMessage, 2) + ' | ' +
+      IntToStr(MidiMessage);
   end;
 end;
 

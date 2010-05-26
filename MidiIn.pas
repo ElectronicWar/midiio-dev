@@ -210,6 +210,7 @@ type
     property PID: Word read FPID; { Product ID }
 
     property MessageCount: Word read GetEventCount;
+    property State: MidiInputState read FState;
     { TODO: property to select which incoming messages get filtered out }
 
     procedure Open;
@@ -227,6 +228,7 @@ type
     { Get first message in input queue }
     function GetMidiEvent: TMyMidiEvent;
     procedure MidiInput(var Message: TMessage);
+    procedure FlushQueue; // discard all queued events
 
     { Some functions to decode and classify incoming messages would be good }
 
@@ -305,6 +307,15 @@ function TMidiInput.DeviceCount: Cardinal;
 begin
   FNumDevs := midiInGetNumDevs;
   Result := FNumDevs;
+end;
+
+procedure TMidiInput.FlushQueue;
+begin
+  while (MessageCount > 0) do
+  begin
+    // get event and free it immediatly
+    GetMidiEvent.Free;
+  end;
 end;
 
 {-------------------------------------------------------------------}

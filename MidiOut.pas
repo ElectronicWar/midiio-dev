@@ -240,7 +240,8 @@ type
     property SupportsStereoVolumeControl: Boolean read GetSupportsLRVolCtrl;
 
     property FullResetOnClose: Boolean read FUseFullReset write FUseFullReset;
-
+    property State: MidiOutputState read FState;
+    
   { Methods }
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -453,11 +454,33 @@ begin
     ecGeneric: Result := GetGenericErrorMessage(WError);
     ecCaching: begin
       case WError of
-        MMSYSERR_INVALFLAG: SpecificError := 'The flag specified by wFlags is invalid.';
-        MMSYSERR_INVALHANDLE: SpecificError := 'The specified device handle is invalid.';
-        MMSYSERR_INVALPARAM: SpecificError := 'The array pointed to by lpPatchArray is invalid.';
-        MMSYSERR_NOMEM: SpecificError := 'The device does not have enough memory to cache all of the requested patches.';
-        MMSYSERR_NOTSUPPORTED: SpecificError := 'The specified device does not support patch caching.';
+        MMSYSERR_INVALFLAG: SpecificError := '(Caching) The flag specified by wFlags is invalid.';
+        MMSYSERR_INVALHANDLE: SpecificError := '(Caching) The specified device handle is invalid.';
+        MMSYSERR_INVALPARAM: SpecificError := '(Caching) The array pointed to by lpPatchArray is invalid.';
+        MMSYSERR_NOMEM: SpecificError := '(Caching) The device does not have enough memory to cache all of the requested patches.';
+        MMSYSERR_NOTSUPPORTED: SpecificError := '(Caching) The specified device does not support patch caching.';
+      end;
+    end;
+    ecPutShort: begin
+      case WError of
+        MIDIERR_BADOPENMODE: SpecificError := '(Short Msg) The application sent a message without a status byte to a stream handle.';
+        MIDIERR_NOTREADY: SpecificError := '(Short Msg) The hardware is busy with other data.';
+        MMSYSERR_INVALHANDLE: SpecificError := '(Short Msg) The specified device handle is invalid.';
+      end;
+    end;
+    ecPutLong: begin
+      case WError of
+        MIDIERR_NOTREADY: SpecificError := '(Long Msg) The hardware is busy with other data.';
+        MIDIERR_UNPREPARED: SpecificError := '(Long Msg) The buffer pointed to by lpMidiOutHdr has not been prepared.';
+        MMSYSERR_INVALHANDLE: SpecificError := '(Long Msg) The specified device handle is invalid.';
+        MMSYSERR_INVALPARAM: SpecificError := '(Long Msg) The specified pointer or structure is invalid.';
+      end;
+    end;
+    ecOutPrepareHeader: begin
+      case WError of
+        MMSYSERR_INVALHANDLE: SpecificError := '(Prep Header) The specified device handle is invalid.';
+        MMSYSERR_INVALPARAM: SpecificError := '(Prep Header) The specified address is invalid or the given stream buffer is greater than 64K.';
+        MMSYSERR_NOMEM: SpecificError := '(Prep Header) The system is unable to allocate or lock memory.';
       end;
     end;
   end;
@@ -666,7 +689,7 @@ begin
 
   FError := midiOutShortMsg(FMidiHandle, thisMsg);
   if Ferror > 0 then
-    raise EMidiOutputError.Create(MidiOutErrorString(FError));
+    raise EMidiOutputError.Create(MidiOutErrorString(FError, ecPutShort));
 end;
 
 {-------------------------------------------------------------------}
@@ -698,13 +721,13 @@ begin
   FError := midiOutPrepareHeader(FMidiHandle, MyMidiHdr.hdrPointer,
     sizeof(TMIDIHDR));
   if Ferror > 0 then
-    raise EMidiOutputError.Create(MidiOutErrorString(FError));
+    raise EMidiOutputError.Create(MidiOutErrorString(FError, ecOutPrepareHeader));
 
  { Send it }
   FError := midiOutLongMsg(FMidiHandle, MyMidiHdr.hdrPointer,
     sizeof(TMIDIHDR));
   if Ferror > 0 then
-    raise EMidiOutputError.Create(MidiOutErrorString(FError));
+    raise EMidiOutputError.Create(MidiOutErrorString(FError, ecPutLong));
 
 end;
 
@@ -715,15 +738,12 @@ begin
   if FState <> mosOpen then
     raise EMidiOutputError.Create('MIDI Output device not open');
 
-  with theEvent do
+  if theEvent.Sysex = nil then
   begin
-    if Sysex = nil then
-    begin
-      PutShort(MidiMessage, Data1, Data2)
-    end
-    else
-      PutLong(Sysex, SysexLength);
-  end;
+    PutShort(theEvent.MidiMessage, theEvent.Data1, theEvent.Data2)
+  end
+  else
+    PutLong(theEvent.Sysex, theEvent.SysexLength);
 end;
 
 {-------------------------------------------------------------------}
@@ -766,8 +786,12 @@ end;
 function TMidiOutput.ChangeDevice(const NewDeviceID: Cardinal;
   const OpenAfterChange: Boolean): Boolean;
 begin
-  Result := Close;
-  if Result then
+  Result := False;
+  
+  if FState <> mosClosed then
+    Close;
+
+  if FState = mosClosed then
   begin
     DeviceID := NewDeviceID;
     if OpenAfterChange then
