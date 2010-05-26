@@ -230,7 +230,8 @@ type
     property Support: DWORD { Technology supported (volume control, }
       read FSupport; { patch caching etc. }
     property Error: DWord read FError; //FAlter DWord statt Word
-    property NumDevs: Word read FNumDevs;
+
+    property NumDevs: Word read FNumDevs; // Buffered output
 
     property SupportedFeatures: TFeatureSet read GetFeaturesAsSet;
     // if ftStereoVolume is supported, ftVolume is allways supported, too.
