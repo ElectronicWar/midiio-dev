@@ -209,6 +209,8 @@ type
     property MID: Word read FMID; { Manufacturer ID }
     property PID: Word read FPID; { Product ID }
 
+    property NumDevs: Cardinal read FNumDevs; // Buffered output
+
     property MessageCount: Word read GetEventCount;
     property State: MidiInputState read FState;
     { TODO: property to select which incoming messages get filtered out }
