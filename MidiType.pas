@@ -103,7 +103,10 @@ type
 
   TMIDIErrorContext = (
     ecGeneric,
-    ecCaching
+    ecCaching,
+    ecPutShort,
+    ecPutLong,
+    ecOutPrepareHeader
   );
 
   TGMInstrumentPatch = (
