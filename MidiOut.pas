@@ -256,7 +256,7 @@ type
 
     procedure PutMidiEvent(theEvent: TMyMidiEvent); virtual;
     procedure PutShort(MidiMessage: Byte; Data1: Byte; Data2: Byte); virtual;
-    procedure PutLong(TheSysex: Pointer; msgLength: Word); virtual;
+    procedure PutLong(const TheSysex: Pointer; const msgLength: Word); virtual;
 
     procedure SetVolume(Left, Right: Word); overload;
     // right volume is ignored if stereo volume is not supported
@@ -313,6 +313,8 @@ procedure Register;
 
 {-------------------------------------------------------------------}
 implementation
+
+uses Windows;
 
 constructor TMidiOutput.Create(AOwner: TComponent);
 begin
@@ -695,7 +697,7 @@ end;
 
 {-------------------------------------------------------------------}
 
-procedure TMidiOutput.PutLong(TheSysex: Pointer; msgLength: Word);
+procedure TMidiOutput.PutLong(const TheSysex: Pointer; const msgLength: Word);
 { Notes: This works asynchronously; you send your sysex output by
 calling this function, which returns immediately. When the MIDI device
 driver has finished sending the data the MidiOutPut function in this
@@ -712,7 +714,7 @@ begin
  { Copy the data over to the MidiHdr buffer
    We can't just use the caller's PChar because the buffer memory
    has to be global, shareable, and locked. }
-  Move(MyMidiHdr.SysexPointer, TheSysex, msgLength);
+  CopyMemory(MyMidiHdr.SysexPointer, TheSysex, msgLength);
 
  { Store the MyMidiHdr address in the header so we can find it again quickly
       (see the MidiOutput proc) }

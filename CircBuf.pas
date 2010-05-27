@@ -124,24 +124,16 @@ begin
 			GlobalFree(hMem);
 		end;
 
-{$IFNDEF WIN32}
-	if (ptr <> Nil) then
-		GlobalPageLock(HIWORD(DWORD(ptr)));
-{$ENDIF}
-	GlobalSharedLockedAlloc := Ptr;
+	Result := Ptr;
 end;
 
 procedure GlobalSharedLockedFree( hMem: HGLOBAL; ptr: Pointer );
 begin
-{$IFNDEF WIN32}
-	if (ptr <> Nil) then
-		GlobalPageUnlock(HIWORD(DWORD(ptr)));
-{$ENDIF}
 	if (hMem <> 0) then
-		begin
-		GlobalUnlock(hMem);
+	begin
+    GlobalUnlock(hMem);
 		GlobalFree(hMem);
-		end;
+  end;
 end;
 
 function CircbufAlloc( Capacity: Word ): PCircularBuffer;

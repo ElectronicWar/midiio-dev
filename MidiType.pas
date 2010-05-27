@@ -80,7 +80,7 @@ type
 		hdrPointer: PMIDIHDR;
 		sysexHandle: THandle;
 		sysexPointer: Pointer;
-		constructor Create(BufferSize: Word);
+		constructor Create(const BufferSize: Word);
 		destructor Destroy; override;
 	end;
 
@@ -301,7 +301,7 @@ end;
 
 {-------------------------------------------------------------------}
 { Allocate memory for the sysex header and buffer }
-constructor TMyMidiHdr.Create(BufferSize:Word);
+constructor TMyMidiHdr.Create(const BufferSize:Word);
 begin
 	inherited Create;
 
