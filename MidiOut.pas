@@ -686,13 +686,18 @@ procedure TMidiOutput.PutShort(MidiMessage: Byte; Data1: Byte; Data2: Byte);
 var
   thisMsg: DWORD;
 begin
-  thisMsg := DWORD(MidiMessage) or
-    (DWORD(Data1) shl 8) or
-    (DWORD(Data2) shl 16);
+  if FState = mosOpen then
+  begin
+    thisMsg := DWORD(MidiMessage) or
+      (DWORD(Data1) shl 8) or
+      (DWORD(Data2) shl 16);
 
-  FError := midiOutShortMsg(FMidiHandle, thisMsg);
-  if Ferror > 0 then
-    raise EMidiOutputError.Create(MidiOutErrorString(FError, ecPutShort));
+    FError := midiOutShortMsg(FMidiHandle, thisMsg);
+    if Ferror > 0 then
+      raise EMidiOutputError.Create(MidiOutErrorString(FError, ecPutShort));
+  end
+  else
+    raise EMidiOutputError.Create('(Short Msg) Device not opened.');
 end;
 
 {-------------------------------------------------------------------}
@@ -708,30 +713,34 @@ if the component user has defined one. }
 var
   MyMidiHdr: TMyMidiHdr;
 begin
- { Initialize the header and allocate buffer memory }
-  MyMidiHdr := TMyMidiHdr.Create(msgLength);
+  if FState = mosOpen then
+  begin
+   { Initialize the header and allocate buffer memory }
+    MyMidiHdr := TMyMidiHdr.Create(msgLength);
 
- { Copy the data over to the MidiHdr buffer
-   We can't just use the caller's PChar because the buffer memory
-   has to be global, shareable, and locked. }
-  CopyMemory(MyMidiHdr.SysexPointer, TheSysex, msgLength);
+   { Copy the data over to the MidiHdr buffer
+     We can't just use the caller's PChar because the buffer memory
+     has to be global, shareable, and locked. }
+    CopyMemory(MyMidiHdr.SysexPointer, TheSysex, msgLength);
 
- { Store the MyMidiHdr address in the header so we can find it again quickly
-      (see the MidiOutput proc) }
-  MyMidiHdr.hdrPointer^.dwUser := DWORD(MyMidiHdr);
+   { Store the MyMidiHdr address in the header so we can find it again quickly
+        (see the MidiOutput proc) }
+    MyMidiHdr.hdrPointer^.dwUser := DWORD(MyMidiHdr);
 
- { Get MMSYSTEM's blessing for this header }
-  FError := midiOutPrepareHeader(FMidiHandle, MyMidiHdr.hdrPointer,
-    sizeof(TMIDIHDR));
-  if Ferror > 0 then
-    raise EMidiOutputError.Create(MidiOutErrorString(FError, ecOutPrepareHeader));
+   { Get MMSYSTEM's blessing for this header }
+    FError := midiOutPrepareHeader(FMidiHandle, MyMidiHdr.hdrPointer,
+      sizeof(TMIDIHDR));
+    if Ferror > 0 then
+      raise EMidiOutputError.Create(MidiOutErrorString(FError, ecOutPrepareHeader));
 
- { Send it }
-  FError := midiOutLongMsg(FMidiHandle, MyMidiHdr.hdrPointer,
-    sizeof(TMIDIHDR));
-  if Ferror > 0 then
-    raise EMidiOutputError.Create(MidiOutErrorString(FError, ecPutLong));
-
+   { Send it }
+    FError := midiOutLongMsg(FMidiHandle, MyMidiHdr.hdrPointer,
+      sizeof(TMIDIHDR));
+    if Ferror > 0 then
+      raise EMidiOutputError.Create(MidiOutErrorString(FError, ecPutLong));
+  end
+  else
+    raise EMidiOutputError.Create('(Long Msg) Device not opened.');
 end;
 
 {-------------------------------------------------------------------}
