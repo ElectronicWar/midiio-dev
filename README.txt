@@ -1,4 +1,4 @@
- Delphi MIDI I/O components               Version 7.0 XX Month 2010
+ Delphi MIDI I/O components               Version 7.0 28 May 2010
  --------------------------               ---------------------------
 
 This release incorporates changes neccessary for use with newer
@@ -7,10 +7,10 @@ Components should work in D6 and up.
 
 It introduces new features to MidiIn/Out, DeviceID reverted to the
 intended Cardinal handling as described by the Win32 SDK (MSDN) and
-much more. I've also reformatted most of the code to meet modern
+much more. I've also reformatted some of the code to meet modern
 standards, moved the Examples to a new folder and created a new
 package for visual use of the components. Components have been
-tested to work on WinXP (32bit) and Win7 (64bit).
+tested to work on WinXP (32bit) so far.
 
 Main intention was to have better MIDI I/O components for my Line6
 project. Since the original source code was released as PUBLIC DOMAIN
@@ -19,8 +19,12 @@ development everyone can benefit from. Big THANKS to David Churcher.
 His 13 years old components are the base for these improvements!
 Thanks to turboPASCAL and FAlter for adding modern Delphi support.
 
-Download & issue tracker can be found at http://saso-labs.com/midi
-German discussion thread located at <DP link>
+Download & issue tracker can be found at
+  http://bitbucket.org/h4ndy/midiio-dev
+	
+German discussion thread located at
+  http://www.delphipraxis.net/topic178030,0,asc,0.html
+	
 
 - Manuel Kroeber <manuel.kroeber@googlemail.com>; Germany 2010
 
