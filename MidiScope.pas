@@ -61,7 +61,9 @@ unit MidiScope;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs;
+  Windows, Messages, SysUtils, Classes, Graphics, Controls,
+
+  MidiCons;
 
 type
   TMidiScope = class(TGraphicControl)
@@ -101,8 +103,6 @@ const
   HeightDiv     = 128 div BarHeight;
 
 implementation
-
-uses Midicons;
 
 procedure Register;
 begin

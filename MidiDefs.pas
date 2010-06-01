@@ -51,7 +51,7 @@ unit MidiDefs;
 
 interface
 
-uses  Windows, MMsystem, Circbuf;
+uses  Windows, MMsystem, CircBuf;
 
 type
 	{-------------------------------------------------------------------}

@@ -50,7 +50,7 @@ unit MidiCallback;
 
 interface
 
-uses WinProcs, WinTypes, MMsystem, Circbuf, MidiDefs, MidiCons;
+uses Windows, MMsystem, Circbuf, MidiDefs, MidiCons;
 
 {$IFDEF WIN32}
 procedure midiHandler(
