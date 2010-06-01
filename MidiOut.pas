@@ -143,7 +143,7 @@ unit MidiOut;
 interface
 
 uses
-  SysUtils, WinTypes, WinProcs, Classes, Messages, Controls,
+  SysUtils, Classes, Messages, Windows,
 
   MMSystem,
   CircBuf, MidiType, MidiDefs, MidiCons, MidiCallback, MidiKeyPatchArray;
@@ -313,8 +313,6 @@ procedure Register;
 
 {-------------------------------------------------------------------}
 implementation
-
-uses Windows;
 
 constructor TMidiOutput.Create(AOwner: TComponent);
 begin

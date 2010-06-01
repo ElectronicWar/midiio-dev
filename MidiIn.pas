@@ -144,7 +144,7 @@ unit MidiIn;
 interface
 
 uses
-  Classes, SysUtils, WinTypes, Messages, WinProcs,
+  Classes, SysUtils, Messages, Windows,
 
   MMSystem,
   MidiDefs, MidiType, MidiCons, CircBuf, MidiCallback;
@@ -259,8 +259,6 @@ procedure Register;
 
 {====================================================================}
 implementation
-
-Uses  Graphics, Controls, Forms, Dialogs;
 
 {-------------------------------------------------------------------}
 constructor TMidiInput.Create(AOwner:TComponent);

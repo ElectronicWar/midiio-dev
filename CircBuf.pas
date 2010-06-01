@@ -62,7 +62,7 @@ Unit CircBuf;
 
 interface
 
-Uses Wintypes, WinProcs, MMSystem;
+Uses Windows, MMSystem;
 
 type
     {$IFNDEF WIN32}

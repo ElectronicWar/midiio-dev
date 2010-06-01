@@ -92,7 +92,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  stdctrls, ExtCtrls, WinProcs;
+  stdctrls, ExtCtrls, MMSystem;
 type
   TChunkType = (illegal, header, track);
   TFileFormat = (single, multi_synch, multi_asynch);
@@ -223,8 +223,6 @@ function MyTimeToStr(val: integer): string;
 procedure Register;
 
 implementation
-
-uses mmsystem;
 
 type TTimerProc=procedure(uTimerID,uMsg: Integer; dwUser,dwParam1,dwParam2:DWORD);stdcall;
 
