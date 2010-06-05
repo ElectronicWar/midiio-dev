@@ -178,6 +178,7 @@ type
     { Events }
     FOnMIDIInput: TNotifyEvent; { MIDI Input arrived }
     FOnOverflow: TNotifyEvent; { Input buffer overflow }
+    FOnDeviceChanged: TNotifyEvent; // after successfully changing the DeviceID
     { TODO: Some sort of error handling event for MIM_ERROR }
 
     { Sysex }
@@ -223,6 +224,7 @@ type
     function DeviceCount: Cardinal; override;
 
     procedure OpenAndStart;
+    procedure StopAndClose;
 
     procedure ChangeDevice(const NewDeviceID: Cardinal;
       const OpenAndStartAfterChange: Boolean = True);
@@ -252,7 +254,8 @@ type
     { Events }
     property OnMidiInput: TNotifyEvent read FOnMIDIInput write FOnMIDIInput;
     property OnOverflow: TNotifyEvent read FOnOverflow write FOnOverflow;
-
+    property OnDeviceChanged: TNotifyEvent
+      read FOnDeviceChanged write FOnDeviceChanged;
   end;
 
 procedure Register;
@@ -381,15 +384,17 @@ begin
 	if FState = misOpen then
 		raise EMidiInputError.Create('Change to DeviceID while device was open')
 	else
+  begin
 		if (DeviceID >= midiInGetNumDevs) then
 			raise EMidiInputError.Create('Invalid device ID')
 		else
-			begin
+    begin
 			FDeviceID := DeviceID;
 
 			{ Set the name and other MIDIINCAPS properties to match the ID }
 			FError :=
 				midiInGetDevCaps(DeviceID, @MidiInCaps, sizeof(TMidiInCaps));
+
 			if Ferror <> MMSYSERR_NOERROR then
 				raise EMidiInputError.Create(MidiInErrorString(FError));
 
@@ -398,7 +403,10 @@ begin
 			FMID := MidiInCaps.wMID;
 			FPID := MidiInCaps.wPID;
 
-			end;
+      if Assigned(FOnDeviceChanged) then
+        FOnDeviceChanged(Self);
+    end;
+  end;
 end;
 
 {-------------------------------------------------------------------}
@@ -667,7 +675,7 @@ end;
 procedure TMidiInput.Close;
 begin
 	if FState = misOpen then
-		begin
+  begin
 		FState := misClosed;
 
 		{ MidiInReset cancels any pending output.
@@ -690,12 +698,12 @@ begin
 
 		FMidiHandle := 0;
 
-		If (PBuffer <> Nil) then
-			begin
+		if (PBuffer <> Nil) then
+		begin
 			CircBufFree( PBuffer );
 			PBuffer := Nil;
-			end;
 		end;
+  end;
 end;
 
 {-------------------------------------------------------------------}
@@ -718,6 +726,12 @@ begin
 		if Ferror <> MMSYSERR_NOERROR then
 			raise EMidiInputError.Create(MidiInErrorString(FError));
 		end;
+end;
+
+procedure TMidiInput.StopAndClose;
+begin
+  Stop;
+  Close;
 end;
 
 {-------------------------------------------------------------------}
