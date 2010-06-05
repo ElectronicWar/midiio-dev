@@ -209,7 +209,7 @@ type
 
   { Events }
     FOnMidiOutput: TNotifyEvent; { Sysex output finished }
-    FOnChangeDevice: TNotifyEvent; // after successfully changing the DeviceID
+    FOnDeviceChanged: TNotifyEvent; // after successfully changing the DeviceID
   published
 
   public
@@ -305,8 +305,8 @@ type
  { Events }
     property OnMidiOutput: TNotifyEvent
       read FOnMidiOutput write FOnMidiOutput;
-    property OnChangeDevice: TNotifyEvent
-      read FOnChangeDevice write FOnChangeDevice;
+    property OnDeviceChanged: TNotifyEvent
+      read FOnDeviceChanged write FOnDeviceChanged;
   end;
 
 procedure Register;
@@ -534,8 +534,8 @@ begin
         FSupport := dwSupport;
       end;
 
-      if Assigned(FOnChangeDevice) then
-        FOnChangeDevice(Self);
+      if Assigned(FOnDeviceChanged) then
+        FOnDeviceChanged(Self);
     end;
 end;
 
