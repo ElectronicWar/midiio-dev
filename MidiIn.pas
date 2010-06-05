@@ -44,7 +44,7 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** *)
- 
+
 unit MidiIn;
 
 {
@@ -163,6 +163,7 @@ type
 
     FError: Word;
     FSysexOnly: Boolean;
+    FMsgFilter: TMidiMsgFilter;
 
     { Stuff from MIDIINCAPS }
     FDriverVersion: Version;
@@ -195,9 +196,10 @@ type
     procedure SetDeviceID(DeviceID: Cardinal);
     procedure SetProductName(NewProductName: String);
     function GetEventCount: Word;
-    procedure SetSysexBufferSize(BufferSize: Word);
-    procedure SetSysexBufferCount(BufferCount: Word);
-    procedure SetSysexOnly(bSysexOnly: Boolean);
+    procedure SetSysexBufferSize(const BufferSize: Word);
+    procedure SetSysexBufferCount(const BufferCount: Word);
+    procedure SetSysexOnly(const bSysexOnly: Boolean);
+    procedure SetMsgFilter(const Value: TMidiMsgFilter);
     function MidiInErrorString(WError: Word): String;
 
   public
@@ -214,7 +216,6 @@ type
 
     property MessageCount: Word read GetEventCount;
     property State: MidiInputState read FState;
-    { TODO: property to select which incoming messages get filtered out }
 
     procedure Open;
     procedure Close;
@@ -237,7 +238,6 @@ type
     { Some functions to decode and classify incoming messages would be good }
 
   published
-
     { TODO: Property editor with dropdown list of product names }
     property ProductName: String read FProductName write SetProductName;
 
@@ -250,6 +250,9 @@ type
       : Word read FSysexBufferCount write SetSysexBufferCount default 16;
     property SysexOnly
       : Boolean read FSysexOnly write SetSysexOnly default False;
+    property FilteredMessages
+      : TMidiMsgFilter read FMsgFilter write SetMsgFilter;
+
 
     { Events }
     property OnMidiInput: TNotifyEvent read FOnMIDIInput write FOnMIDIInput;
@@ -286,6 +289,9 @@ begin
 		Handle := Classes.AllocateHWnd(MidiInput);
 	end;
 
+  PCtlInfo := nil;
+  FMsgFilter := [msgActiveSensing, msgMidiTimeCode];
+
 	FState := misClosed;
 end;
 
@@ -294,15 +300,16 @@ end;
 destructor TMidiInput.Destroy;
 begin
 	if (FMidiHandle <> 0) then
-		begin
+  begin
 		Close;
 		FMidiHandle := 0;
-		end;
+	end;
 
-	if (PCtlInfo <> Nil) then
+	if (PCtlInfo <> nil) then
 		GlobalSharedLockedFree( PCtlinfo^.hMem, PCtlInfo );
 
 	Classes.DeallocateHWnd(Handle);
+
 	inherited Destroy;
 end;
 
@@ -344,7 +351,7 @@ end;
 
 {-------------------------------------------------------------------}
 { Set the sysex buffer size, fail if device is already open }
-procedure TMidiInput.SetSysexBufferSize(BufferSize: Word);
+procedure TMidiInput.SetSysexBufferSize(const BufferSize: Word);
 begin
 	if FState = misOpen then
 		raise EMidiInputError.Create('Change to SysexBufferSize while device was open')
@@ -355,18 +362,18 @@ end;
 
 {-------------------------------------------------------------------}
 { Set the sysex buffer count, fail if device is already open }
-procedure TMidiInput.SetSysexBuffercount(Buffercount: Word);
+procedure TMidiInput.SetSysexBufferCount(const BufferCount: Word);
 begin
 	if FState = misOpen then
-		raise EMidiInputError.Create('Change to SysexBuffercount while device was open')
+		raise EMidiInputError.Create('Change to SysexBufferCount while device was open')
 	else
 		{ TODO: Validate the sysex buffer count }
-		FSysexBuffercount := Buffercount;
+		FSysexBufferCount := BufferCount;
 end;
 
 {-------------------------------------------------------------------}
 { Set the Sysex Only flag to eliminate unwanted short MIDI input messages }
-procedure TMidiInput.SetSysexOnly(bSysexOnly: Boolean);
+procedure TMidiInput.SetSysexOnly(const bSysexOnly: Boolean);
 begin
 	FSysexOnly := bSysexOnly;
 	{ Update the interrupt handler's copy of this property }
@@ -406,6 +413,17 @@ begin
       if Assigned(FOnDeviceChanged) then
         FOnDeviceChanged(Self);
     end;
+  end;
+end;
+
+procedure TMidiInput.SetMsgFilter(const Value: TMidiMsgFilter);
+begin
+  FMsgFilter := Value;
+
+  if (PCtlInfo <> nil) then
+  begin
+		PCtlInfo^.FilterMTC := (msgMidiTimeCode in FMsgFilter);
+    PCtlInfo^.FilterAS := (msgActiveSensing in FMsgFilter);
   end;
 end;
 
@@ -541,18 +559,22 @@ var
 begin
 	try
 		{ Create the buffer for the MIDI input messages }
-		If (PBuffer = Nil) then
+		if (PBuffer = Nil) then
 			PBuffer := CircBufAlloc( FCapacity );
 
 		{ Create the control info for the DLL }
 		if (PCtlInfo = Nil) then
-			begin
+		begin
 			PCtlInfo := GlobalSharedLockedAlloc( Sizeof(TMidiCtlInfo), hMem );
 			PctlInfo^.hMem := hMem;
-			end;
+		end;
+
 		PctlInfo^.pBuffer := PBuffer;
 		Pctlinfo^.hWindow := Handle;	{ Control's window handle }
 		PCtlInfo^.SysexOnly := FSysexOnly;
+    PCtlInfo^.FilterMTC := (msgMidiTimeCode in FMsgFilter);
+    PCtlInfo^.FilterAS := (msgActiveSensing in FMsgFilter);
+
 		FError := midiInOpen(@FMidiHandle, FDeviceId,
 						DWORD(@midiHandler),
 						DWORD(PCtlInfo),
@@ -763,4 +785,3 @@ begin
 end;
 
 end.
-

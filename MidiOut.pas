@@ -210,7 +210,6 @@ type
   { Events }
     FOnMidiOutput: TNotifyEvent; { Sysex output finished }
     FOnDeviceChanged: TNotifyEvent; // after successfully changing the DeviceID
-  published
 
   public
   { Properties }
@@ -257,6 +256,7 @@ type
     procedure PutMidiEvent(theEvent: TMyMidiEvent); virtual;
     procedure PutShort(MidiMessage: Byte; Data1: Byte; Data2: Byte); virtual;
     procedure PutLong(const TheSysex: Pointer; const msgLength: Word); virtual;
+    function DriverMidiMessage(const Msg: Cardinal; const dw1, dw2: DWORD): DWORD; experimental;
 
     procedure SetVolume(Left, Right: Word); overload;
     // right volume is ignored if stereo volume is not supported
@@ -300,7 +300,6 @@ type
     property ProductName: string read FProductName write SetProductName;
 
     property DeviceID: Cardinal read FDeviceID write SetDeviceID default 0;
-  { TODO: midiOutMessage?? Does anyone use this? }
 
  { Events }
     property OnMidiOutput: TNotifyEvent
@@ -345,6 +344,12 @@ function TMidiOutput.DeviceCount: Cardinal;
 begin
   FNumDevs := midiOutGetNumDevs;
   Result := FNumDevs;
+end;
+
+function TMidiOutput.DriverMidiMessage(const Msg: Cardinal; const dw1,
+  dw2: DWORD): DWORD;
+begin
+  Result := midiOutMessage(HMIDIOUT(FDeviceID), msg, dw1, dw2);
 end;
 
 function TMidiOutput.GetFeaturesAsSet: TFeatureSet;
@@ -708,6 +713,9 @@ component is called, which will in turn call the OnMidiOutput method
 if the component user has defined one. }
 { TODO: Combine common functions with PutTimedLong into subroutine }
 
+// MKr: Does anyone know what's meant with PutTimedLong?
+// Can't find any timed WinAPI MIDI stuff on the internet...
+
 var
   MyMidiHdr: TMyMidiHdr;
 begin
@@ -834,8 +842,8 @@ begin
   begin
     if FUseFullReset then
     begin
-      // Note this sends a lot of fast control change messages which some synths can't handle.
-      { DONE: Make this optional. }
+      // Note: this sends a lot of fast control change messages which some\
+      // synths can't handle thus it's off by default.
       FError := midioutReset(FMidiHandle);
 
       if FError <> 0 then
@@ -851,7 +859,6 @@ begin
 
   FMidiHandle := 0;
   FState := mosClosed;
-
 end;
 
 procedure TMidiOutput.ControllerChange(const Channel, NewController,

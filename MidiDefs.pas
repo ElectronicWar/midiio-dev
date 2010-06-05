@@ -59,10 +59,12 @@ type
 	  the MIDI input callback function in the DLL at interrupt time }
 	PMidiCtlInfo = ^TMidiCtlInfo;
 	TMidiCtlInfo = record
-		hMem: THandle; 				{ Memory handle for this record }
+		hMem: THandle; 				    { Memory handle for this record }
 		PBuffer: PCircularBuffer;	{ Pointer to the MIDI input data buffer }
-		hWindow: HWnd;					{ Control's window handle }
-		SysexOnly: Boolean;			{ Only process System Exclusive input }
+		hWindow: HWnd;		   			{ Control's window handle }
+		SysexOnly: Boolean;	   		{ Only process System Exclusive input }
+    FilterMTC: Boolean;       { Filter Midi Time Code messages out }
+    FilterAS: Boolean;        { Filter Active Sensing messages out }
 	end;
 
 	{ Information for the output timer callback function, also required at
