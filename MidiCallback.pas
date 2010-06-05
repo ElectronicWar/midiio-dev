@@ -115,6 +115,7 @@ var
   thisEvent: TMidiBufferItem;
   thisCtlInfo: PMidiCtlInfo;
   thisBuffer: PCircularBuffer;
+  ProcessThisMessage: Boolean;
 
 begin
   case wMsg of
@@ -124,24 +125,29 @@ begin
     mim_Error: {TODO: handle (message to trigger exception?) };
 
     mim_Data, mim_Longdata, mim_Longerror:
-   { Note: mim_Longerror included because there's a bug in the Maui
-   input driver that sends MIM_LONGERROR for subsequent buffers when
-   the input buffer is smaller than the sysex block being received }
-
+      { Note: mim_Longerror included because there's a bug in the Maui
+      input driver that sends MIM_LONGERROR for subsequent buffers when
+      the input buffer is smaller than the sysex block being received }
       begin
-   { TODO: Make filtered messages customisable, I'm sure someone wants to
-   do something with MTC! }
-        if (dwParam1 <> MIDI_ACTIVESENSING) and
-          (dwParam1 <> MIDI_TIMINGCLOCK) then
-        begin
+        thisCtlInfo := PMidiCtlInfo(dwInstance);
 
-    { The device driver passes us the instance data pointer we
-    specified for midiInOpen. Use this to get the buffer address
-    and window handle for the MIDI control }
-          thisCtlInfo := PMidiCtlInfo(dwInstance);
+        // Filter messages if enabled (is there a more efficient way?
+        case dwParam1 of
+          MIDI_ACTIVESENSING: ProcessThisMessage := not thisCtlInfo^.FilterAS;
+          MIDI_TIMINGCLOCK: ProcessThisMessage := not thisCtlInfo^.FilterMTC;
+        else
+          ProcessThisMessage := True;
+        end;
+
+        if ProcessThisMessage then
+        begin
+          { The device driver passes us the instance data pointer we
+          specified for midiInOpen. Use this to get the buffer address
+          and window handle for the MIDI control }
+
           thisBuffer := thisCtlInfo^.PBuffer;
 
-    { Screen out short messages if we've been asked to }
+          { Screen out short messages if we've been asked to }
           if ((wMsg <> mim_Data) or (thisCtlInfo^.SysexOnly = False))
             and (thisCtlInfo <> nil) and (thisBuffer <> nil) then
           begin

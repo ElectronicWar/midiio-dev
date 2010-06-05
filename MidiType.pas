@@ -109,6 +109,13 @@ type
     ecOutPrepareHeader
   );
 
+  TMidiMsg = (
+    msgActiveSensing,
+    msgMidiTimeCode
+  );
+
+  TMidiMsgFilter = set of TMidiMsg;
+
   TGMInstrumentPatch = (
     // Piano
     gmiAcousticGrandPiano, gmiBrightAcousticPiano,
