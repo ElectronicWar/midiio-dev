@@ -69,8 +69,8 @@ FAlter (member of DelphiPraxis.net board)
 
 
 --- Original ---
- Delphi MIDI I/O Components               Version 3.0  9 June 1997
- --------------------------               ---------------------------
+ Delphi MIDI I/O Components               Version 3.0c  14 Mar 2003
+ --------------------------               -------------------------
  
  These components handle low-level MIDI input and output using the 
 Windows multimedia MIDI functions. They encapsulate all the nasty
@@ -96,7 +96,7 @@ created at runtime.
 any type of program based on them. 
 
  If you need to know more about MIDI see the links at the bottom of 
-my MIDI page http://www.davec.op.nu
+my MIDI page http://go.to/davesmidi.
 
 
 Changes for Delphi 3:
@@ -117,8 +117,7 @@ Frequently Asked Questions
 --------------------------
 
 I've had a lot of email about these components. Thanks to everyone
-who sent kind words, code, and bug reports. Here are answers to the
-questions that cropped up most often:
+who sent kind words, code, and bug reports. 
 
  Q: How do you load MIDI files and play them using these components?
 
@@ -205,7 +204,7 @@ Use Chr() to add variables to the sequence, e.g.
  There are two ways of getting a pointer to the string to pass to
 TMidiOutput.Putlong:
 
-     i) In Delphi 2&3, cast the string to a pointer, e.g.
+     i) In Delphi 2+, cast the string to a pointer, e.g.
 
   MidiOutput1.PutLong(Pointer(sMidi), Length(sMidi));
 
@@ -233,12 +232,26 @@ got the components for free and I don't get paid for support.
  Updated versions of this component may appear on my MIDI software web
 page:
 
-    http://www.davec.op.nu
+    http://go.to/davesmidi
 
 
 
  Revision history
  -----------
+v3.0c
+-----
+Bug fix: TMidiIn would prevent Windows shutdown by not responding
+to WM_QUERYENDSESSION message.
+
+
+v3.0b
+-----
+Bug fix: With some MIDI drivers sysex data would be added on to the end
+of input buffers after the first set of buffers was used up. Thanks to 
+Pete from Soundcraft for fixing this.
+
+README.TXT updated with a more mobile web page.
+
 
 v3.0
 ----

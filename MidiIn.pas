@@ -1,4 +1,4 @@
-{ $Header: /MidiComp/Midiin.pas 2     10/06/97 7:33 Davec $ }
+{ $Header: /MidiComp/Midiin.pas 4     28/02/01 11:35 Davec $ }
 
 { Written by David Churcher <dchurcher@cix.compulink.co.uk>,
   released to the public domain. }
@@ -232,7 +232,7 @@ type
 
     { Get first message in input queue }
     function GetMidiEvent: TMyMidiEvent;
-    procedure MidiInput(var Message: TMessage);
+    procedure MidiInput(var AMessage: TMessage);
     procedure FlushQueue; // discard all queued events
 
     { Some functions to decode and classify incoming messages would be good }
@@ -274,7 +274,8 @@ begin
 
 	FSysexOnly := False;
 	FNumDevs := midiInGetNumDevs;
-    MidiHdrs := Nil;
+  MidiHdrs := Nil;
+  FMidiHandle := 0;
 
 	{ Set defaults }
   if FNumDevs > 0 then
@@ -392,7 +393,7 @@ begin
 		raise EMidiInputError.Create('Change to DeviceID while device was open')
 	else
   begin
-		if (DeviceID >= midiInGetNumDevs) then
+		if (DeviceID >= midiInGetNumDevs) and (DeviceID <> MIDI_MAPPER) then
 			raise EMidiInputError.Create('Invalid device ID')
 		else
     begin
@@ -594,17 +595,25 @@ begin
 
 	except
 		if PBuffer <> Nil then
-			begin
+    begin
 			CircBufFree(PBuffer);
 			PBuffer := Nil;
-			end;
+    end;
 
 		if PCtlInfo <> Nil then
-			begin
+    begin
 			GlobalSharedLockedFree(PCtlInfo^.hMem, PCtlInfo);
 			PCtlInfo := Nil;
-			end;
+    end;
 
+    if ( FMidiHandle <> 0 ) then
+    begin
+      { Exception occurred after midiInOpen }
+      FError := MidiInClose(FMidiHandle);
+      FMidiHandle := 0;
+    end;
+    { Send exception to caller }
+    raise;
 	end;
 
 end;
@@ -622,46 +631,49 @@ var
 begin
 	if (FState = misOpen) and
 		CircBufReadEvent(PBuffer, @thisItem) then
-		begin
+  begin
 		Result := TMyMidiEvent.Create;
 		with thisItem Do
-			begin
+    begin
 			Result.Time := Timestamp;
 			if (Sysex = Nil) then
-				begin
+      begin
 				{ Short message }
 				Result.MidiMessage := LoByte(LoWord(Data));
 				Result.Data1 := HiByte(LoWord(Data));
 				Result.Data2 := LoByte(HiWord(Data));
 				Result.Sysex := Nil;
 				Result.SysexLength := 0;
-				end
+      end
 			else
             	{ Long Sysex message }
-				begin
+      begin
 				Result.MidiMessage := MIDI_BEGINSYSEX;
 				Result.Data1 := 0;
 				Result.Data2 := 0;
 				Result.SysexLength := Sysex^.dwBytesRecorded;
 				if Sysex^.dwBytesRecorded <> 0 then
-					begin
+        begin
 					{ Put a copy of the sysex buffer in the object }
 					GetMem(Result.Sysex, Sysex^.dwBytesRecorded);
 					StrMove(Result.Sysex, Sysex^.lpData, Sysex^.dwBytesRecorded);
-					end;
+          { If you don't zero this out some MIDI drivers append new data to the old data }
+          Sysex^.dwBytesRecorded := 0;
+        end;
 
 				{ Put the header back on the input buffer }
 				FError := midiInPrepareHeader(FMidiHandle,Sysex,
 					sizeof(TMIDIHDR));
 				If Ferror = 0 then
-					FError := midiInAddBuffer(FMidiHandle,
-						Sysex, sizeof(TMIDIHDR));
+					FError := midiInAddBuffer(FMidiHandle, Sysex, sizeof(TMIDIHDR));
+
 				if Ferror <> MMSYSERR_NOERROR then
 					raise EMidiInputError.Create(MidiInErrorString(FError));
-				end;
-			end;
+
+      end;
+    end;
 		CircbufRemoveEvent(PBuffer);
-		end
+  end
 	else
 		{ Device isn't open, return a nil event }
 		Result := Nil;
@@ -757,24 +769,31 @@ begin
 end;
 
 {-------------------------------------------------------------------}
-procedure TMidiInput.MidiInput( var Message: TMessage );
+procedure TMidiInput.MidiInput( var AMessage: TMessage );
 { Triggered by incoming message from DLL.
   Note DLL has already put the message in the queue }
 begin
-	case Message.Msg of
+	case AMessage.Msg of
 	mim_data:
 		{ Trigger the user's MIDI input event, if they've specified one and
 		we're not in the process of closing the device. The check for
 		GetEventCount > 0 prevents unnecessary event calls where the user has
 		already cleared all the events from the input buffer using a GetMidiEvent
 		loop in the OnMidiInput event handler }
-		if Assigned(FOnMIDIInput) and (FState = misOpen)
-			and (GetEventCount > 0) then
+		if Assigned(FOnMIDIInput) and
+      (FState = misOpen) and
+      (GetEventCount > 0)
+    then
 			FOnMIDIInput(Self);
 
 	mim_Overflow:	{ input circular buffer overflow }
 		if Assigned(FOnOverflow) and (FState = misOpen) then
 			FOnOverflow(Self);
+
+  WM_QUERYENDSESSION:
+    // Have to handle this explicitly otherwise DefWindowProc doesn't set the
+    // result and app doesn't shut down when Windows shuts down or user logs off
+    AMessage.Result := 1;
 	end;
 end;
 
