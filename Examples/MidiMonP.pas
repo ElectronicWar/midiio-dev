@@ -1,4 +1,4 @@
-{ $Header: /MidiComp/MIDIMONP.PAS 2     10/06/97 7:33 Davec $ }
+{ $Header: /MidiComp/MIDIMONP.PAS 3     28/02/01 11:24 Davec $ }
 
 { This demo shows how MidiInput and MidiOutput components can be used
   interactively at design time on a form.
@@ -101,6 +101,7 @@ begin
 	MidiInput1.ProductName := cmbInput.Text;
 	MidiOutput1.ProductName := cmbOutput.Text;
 	{ Open devices }
+        { DEBUG }
 	MidiInput1.Open;
 	MidiInput1.Start;
 	MidiOutput1.Open;

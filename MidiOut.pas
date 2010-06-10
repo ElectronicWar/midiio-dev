@@ -1,4 +1,4 @@
-{ $Header: /MidiComp/MidiOut.pas 2     10/06/97 7:33 Davec $ }
+{ $Header: /MidiComp/MidiOut.pas 3     28/02/01 11:24 Davec $ }
 
 { Written by David Churcher <dchurcher@cix.compulink.co.uk>,
   released to the public domain. }
