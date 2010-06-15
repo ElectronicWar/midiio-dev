@@ -196,6 +196,8 @@ type
     FUseFullReset: Boolean;
 
   { Stuff from midioutCAPS }
+    FMID: Word; { Manufacturer ID }
+    FPID: Word; { Product ID }
     FDriverVersion: Version;  { Driver version from midioutGetDevCaps }
     FProductName: string;     { product name }
     FTechnology: OutPortTech; { Type of MIDI output device }
@@ -214,6 +216,9 @@ type
   public
   { Properties }
     property MIDIHandle: Hmidiout read FMIDIHandle;
+
+    property MID: Word read FMID; { Manufacturer ID }
+    property PID: Word read FPID; { Product ID }
     property DriverVersion: Version  { Driver version from midioutGetDevCaps }
       read FDriverVersion;
     property Technology: OutPortTech { Type of MIDI output device }
@@ -228,6 +233,7 @@ type
       read FChannelMask; { device responds to (internal synth) }
     property Support: DWORD { Technology supported (volume control, }
       read FSupport; { patch caching etc. }
+
     property Error: DWord read FError; //FAlter DWord statt Word
 
     property NumDevs: Word read FNumDevs; // Buffered output
@@ -530,6 +536,8 @@ begin
 
       with midiOutCaps do
       begin
+        FMID := wMid;
+        FPID := wPid;
         FProductName := StrPas(szPname);
         FDriverVersion := vDriverVersion;
         FTechnology := OutPortTech(wTechnology);
