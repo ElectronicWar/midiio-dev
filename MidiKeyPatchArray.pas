@@ -3,7 +3,7 @@
  *
  *    Author: Manuel Kröber
  *      Mail: manuel.kroeber@googlemail.com
- *       Web: http://saso-labs.com/midi/
+ *       Web: http://bitbucket.org/h4ndy/midiio-dev
  *
  * Description:
  * Provides TKeyPatchArray type and helpful functions for it.
