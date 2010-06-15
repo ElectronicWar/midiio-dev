@@ -42,6 +42,7 @@ contains
   MidiOut in '..\MidiOut.pas',
   MidiType in '..\MidiType.pas',
   MidiKeyPatchArray in '..\MidiKeyPatchArray.pas',
-  MidiScope in '..\MidiScope.pas';
+  MidiScope in '..\MidiScope.pas',
+  MidiDeviceComboBox in '..\MidiDeviceComboBox.pas';
 
 end.
