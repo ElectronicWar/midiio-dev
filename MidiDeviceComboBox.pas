@@ -139,6 +139,7 @@ begin
           tmpMidiIn.ChangeDevice(i, False);
           Items.Append(tmpMidiIn.ProductName);
         end;
+        ItemIndex := 0;
       end
       else
         Text := 'No MIDI Input Devices found.';
@@ -157,6 +158,7 @@ begin
           tmpMidiOut.ChangeDevice(i, False);
           Items.Append(tmpMidiOut.ProductName);
         end;
+        ItemIndex := 0;
       end
       else
         Text := 'No MIDI Output Devices found.';

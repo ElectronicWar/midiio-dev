@@ -63,6 +63,7 @@
 			<DCCReference Include="..\MidiKeyPatchArray.pas"/>
 			<DCCReference Include="..\MidiScope.pas"/>
 			<DCCReference Include="..\MidiDeviceComboBox.pas"/>
+			<DCCReference Include="..\MidiEventStreamer.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>
