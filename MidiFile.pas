@@ -413,7 +413,7 @@ end;
 constructor TMidifile.Create(AOwner: TComponent);
 begin
   inherited Create(AOWner);
-  MIDIFileHandle:=AllocateHWnd(WndProc);
+  MIDIFileHandle:=Classes.AllocateHWnd(WndProc);
   chunkData := nil;
   chunkType := illegal;
   Tracks := TList.Create;
@@ -433,7 +433,7 @@ begin
 
   if MIDITimerID<>0 then KillMIDITimer;
 
-  DeallocateHWnd(MIDIFileHandle);
+  Classes.DeallocateHWnd(MIDIFileHandle);
 
   inherited Destroy;
 end;
