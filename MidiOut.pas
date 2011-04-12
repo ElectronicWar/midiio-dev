@@ -262,7 +262,7 @@ type
     procedure PutMidiEvent(theEvent: TMyMidiEvent); virtual;
     procedure PutShort(MidiMessage: Byte; Data1: Byte; Data2: Byte); virtual;
     procedure PutLong(const TheSysex: Pointer; const msgLength: Word); virtual;
-    function DriverMidiMessage(const Msg: Cardinal; const dw1, dw2: DWORD): DWORD; experimental;
+    function DriverMidiMessage(const Msg: Cardinal; const dw1, dw2: DWORD): DWORD; {$IFDEF VER170}experimental;{$ENDIF}
 
     procedure SetVolume(Left, Right: Word); overload;
     // right volume is ignored if stereo volume is not supported
@@ -294,9 +294,9 @@ type
     // Caching. Returns true if successful. Check LastError on False.
     // Use property "SupportsCaching" for a pre-check.
     function CachePatches(const Bank: Cardinal; var PatchArray: TKeyPatchArray;
-      const OperationFlag: Byte): Boolean; experimental;
+      const OperationFlag: Byte): Boolean; {$IFDEF VER170}experimental;{$ENDIF}
     function CacheDrumPatches(const Patch: Cardinal; var KeyArray: TKeyPatchArray;
-      const OperationFlag: Byte): Boolean; experimental;
+      const OperationFlag: Byte): Boolean; {$IFDEF VER170}experimental;{$ENDIF}
 
 
   { Some functions to decode and classify incoming messages would be nice }

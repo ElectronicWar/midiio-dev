@@ -3,7 +3,7 @@
  *
  *    Author: Manuel Kröber
  *      Mail: manuel.kroeber@googlemail.com
- *       Web: http://bitbucket.org/h4ndy/midiio-dev
+ *       Web: http://saso-labs.com/midi/
  *
  * Description:
  * Provides TKeyPatchArray type and helpful functions for it.
@@ -78,11 +78,12 @@ begin
     Result := True;
     PatchArray[PatchNumber] := 0; // Reset
 
-    for CurChannel in ChannelsToEnable do
+    for CurChannel := low(TMidiChannel) to high(TMidiChannel) do
     begin
-      PatchArray[PatchNumber] := (
-			  PatchArray[PatchNumber] or (1 shl CurChannel)
-			);
+      if (CurChannel in ChannelsToEnable) then
+        PatchArray[PatchNumber] := (
+          PatchArray[PatchNumber] or (1 shl CurChannel)
+        );
     end;
   end
   else
