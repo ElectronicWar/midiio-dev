@@ -7,15 +7,7 @@ program Multimon;
 
 uses
   Forms,
-  Multimnp in 'MULTIMNP.PAS' {Form1},
-  MIDIIn in 'MIDIIN.PAS',
-  Circbuf in 'CIRCBUF.PAS',
-  midiout in 'MIDIOUT.PAS',
-  Midicons in 'midicons.pas',
-  Miditype in 'Miditype.pas',
-  Monprocs in 'Monprocs.pas',
-  Mididefs in 'mididefs.pas',
-  Delphmcb in 'Delphmcb.pas';
+  Multimnp in 'MultiMNP.pas' {Form1};
 
 {$R *.RES}
 
