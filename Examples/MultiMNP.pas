@@ -51,13 +51,13 @@
   on the system, and uses a common input handler procedure to display
   the input data, including the name of the input device. }
 	
-unit MultiNMP;
+unit MultiMNP;
 
 interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, MMSystem, StdCtrls, MIDIIn, MidiOut, MidiType, ExtCtrls,
+  Forms, Dialogs, MMSystem, StdCtrls, MidiIn, MidiOut, MidiType, ExtCtrls,
   Menus, Monprocs;
 
 type
