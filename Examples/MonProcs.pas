@@ -116,7 +116,7 @@ begin
 			case ThisEvent.MidiMessage of
 			MIDI_BEGINSYSEX:
 				EventDesc := Format('Sysex (%d): ', [ThisEvent.SysexLength]) +
-					BinaryToHexList(ThisEvent.Sysex, ThisEvent.SysexLength);
+					BinaryToHexList(PWideChar(ThisEvent.Sysex), ThisEvent.SysexLength);
 
 			{2-byte system events}
 			MIDI_MTCQUARTERFRAME,
